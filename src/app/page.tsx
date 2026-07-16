@@ -57,13 +57,13 @@ export default function Page() {
 
       <header className={styles.hero}>
         <h1 className={styles.heroTitle}>
-          Move STRK,
+          Just Encrypt
           <br />
-          <span className={styles.heroAccent}>shielded.</span>
+          <span className={styles.heroAccent}>Everything</span>
         </h1>
         <p className={styles.heroSub}>
-          Shield, unshield and privately transfer STRK on Starknet through the
-          WalletAccountV6 privacy pool.
+          Shield, unshield, privately transfer and private custom functions on
+          Starknet.
         </p>
       </header>
 
