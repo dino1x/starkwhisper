@@ -1,80 +1,81 @@
-# Starknet-WalletAccount
+# STRK20 Privacy Starter Kit
 
-## Presentation :
+A minimal, batteries-included Next.js starter for building **privacy dApps on Starknet** with [STRK20](https://eprint.iacr.org/2026/474) — the note-based privacy pool for any ERC-20 — through **`WalletAccountV6`** (starknet.js v10). Shield, unshield, privately transfer, read shielded balances, and run an **anonymizer** (`privacy_invoke`) — all through the user's privacy-enabled wallet, never touching a viewing key.
 
-This repo contains a DAPP to interact with the Starknet blockchain, using the new wallet API.
+Use it as a working reference for the two things that are hardest to get right the first time:
 
-**You can test this DAPP ; it's already deployed [here](https://starknet-wallet-account.vercel.app/)**.
+1. **Wallet-mediated privacy invocation** — connecting, building STRK20 actions, and the placeholder-string / event-verification quirks.
+2. **A helper (anonymizer) contract** — a minimal `privacy_invoke` Cairo contract you deploy and call atomically from the pool.
 
-> [!IMPORTANT]
-> Stars are appreciated!
-> 
-## specification :
+> This is a **starter/demo**: fixed token (STRK), fixed amounts, and an *echo* helper (a no-op round-trip that just exercises the flow). Values marked `DEMO` in the code are meant to be replaced.
 
-The official Starkware specification of the wallet API is here : https://github.com/starkware-libs/starknet-specs/blob/master/wallet-api/wallet_rpc.json
+## Features
 
-The corresponding TypeScript library is here : https://github.com/starknet-io/types-js
+- **Connect** via `get-starknet` v6 wallet-standard discovery with a wallet picker (Ready / Xverse), and the `eip1193Adapters: []` fix that stops MetaMask unlock-popup spam.
+- **Shield / Unshield / Private transfer** through `WalletAccountV6.strk20InvokeTransaction(...)`.
+- **Shielded balances** via `strk20Balances([])` (wallet-mediated, no keys).
+- **Echo anonymizer round-trip** — the `withdraw → privacy_invoke → refill open note` pattern, with on-chain `Invoked`-event verification.
+- **Deploy the helper from the UI** (`deployContract` via UDC), network-aware (Mainnet / Sepolia).
+- Lean, dependency-light: Next.js + React + starknet.js + zustand. No component framework.
 
-> [!IMPORTANT]
-> - **An easier way to read the Wallet API: a documentation I created is [here](https://github.com/PhilippeR26/Starknet-WalletAccount/blob/api/doc/walletAPIspec.md).**  
-> - A documentation for wallet teams is [here](https://github.com/PhilippeR26/Starknet-WalletAccount/blob/api/doc/migrateToGetStarknetV4.md).
+## Stack
 
+Next.js 16 · React 19 · TypeScript · `starknet@10.4.0` (`WalletAccountV6`) · `@starknet-io/get-starknet-discovery@6` + `-wallet-standard@6` · `zustand`. Cairo helper: Scarb + `starknet 2.18`.
 
-### Wallet API entry points :
-The `Wallet API` tab is exposing all the low level entry points of this API :
-![](./Images/Api.png)
-
-### WalletAccount usage :
-The `WalletAccount` tab allows you to test some features of this new Starknet.js class.
-![](./Images/WalletAccount.png)
-Let's see more in detail this WalletAccount.  
-It's very similar to a Starknet.js `Account` class. There is anyway a huge difference : the private key is hold in a browser wallet (as ArgentX or Braavos), and any signature is managed by the wallet.  
-The architecture is : 
-<p align="center">
-  <img src="./Images/architecture.png" />
-</p>  
-
-If you want to read Starknet, the WalletAccount will read directly the blockchain. That's why at the initialization of a WalletAccount, you need to put in the parameters a Provider instance. It will be used for all reading activities.
-
-If you want to write to Starknet, the WalletAccount will ask to the Wallet to sign and send the transaction.  
-As several Wallets can be installed in your browser, the WalletAccount needs the ID of one of the available wallets. You can ask to get-starknet to display a list of available wallets and to provide as a response the ID of the selected wallet.  
-You can also create your own UI to select the wallet. In this DAPP, I have created a custom UI [here](./src/app/components/client/WalletHandle/SelectWallet.tsx).  
-So, you instantiate a new Wallet account with :
-```typescript
-import { connect } from "get-starknet"; // v4.0.8
-import { WalletAccount } from "starknet"; // v8.6.0
-const myFrontendProvider = "https://free-rpc.nethermind.io/sepolia-juno/v0_7";
-// UI to select a wallet :
-const selectedWallet = await connect({ modalMode: "alwaysAsk", modalTheme: "light" }); 
-const my_WAccount = new WalletAccount(myFrontendProvider, selectedWallet);
-```
-
-Then you can use all the power of Starknet.js, exactly as a with a normal Account instance.  
-And you have some extra functionalities :
-- subscription to these events : account / network changes in the wallet.
-- direct access to the wallet API entry points.
-
-
-## Getting Started 🚀 :
-
-For a local usage :  
-
-First, run the development server:
+## Quick start
 
 ```bash
-npm i
-npm run dev
+git clone <your-fork-url>
+cd Starknet-WalletAccount
+npm install
+cp .env.example .env.local        # then add your Alchemy key
+npm run dev                        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.  
-<kbd>CTRL</kbd> + <kbd>SHIFT</kbd> + <kbd>I</kbd> to see debug information.
+You need a free [Alchemy](https://alchemy.com) Starknet RPC key (`NEXT_PUBLIC_PROVIDER_URL`) and a **privacy-enabled wallet** (the Ready extension) on Sepolia or Mainnet. See `.env.example` for all variables.
 
-The DAPP is made in the next.js framework. Coded in Typescript. Using Starknet.js v6.8.0, get-starknet v4, Next.js framework, Zustand context & Chaka-ui components.
+## How it works
 
-## Deploy on Vercel 🎊 :
+| Concern | Where | Notes |
+|---|---|---|
+| Connect + wallet picker | `src/app/components/client/WalletHandle/SelectWallet.tsx` | `createStore({ eip1193Adapters: [] })`, wallet-standard discovery, modal picker |
+| STRK20 actions + UI | `src/app/components/client/WalletHandle/WalletAccountV6Tag.tsx` | shield/send/unshield/echo/balances tabs; action shapes; placeholder strings; receipt + event verification |
+| Config (token, providers, helper) | `src/utils/constants.ts` | `DEMO`-labelled values to swap |
+| App shell / theme | `src/app/page.tsx`, `src/app/uni.module.css` | |
+| Wallet / provider state | `src/app/components/Wallet/walletContext.ts`, `.../provider/providerContext.ts` | zustand stores |
+| Example anonymizer | `cairo/src/lib.cairo` | `StrkInvokeHelper` — the `privacy_invoke` entrypoint |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**The invoke placeholder rule** (a common footgun): in the `invoke` action, `"OPEN"`, `"${poolAddress}"`, and `"${openNoteIds[0]}"` are literal strings the wallet substitutes during proof assembly — do **not** hex-normalize them. Only real values (token, amounts) get `num.toHex`.
 
-Check out the [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## The example anonymizer
 
+`cairo/src/lib.cairo` is a complete minimal anonymizer. The pool calls its `privacy_invoke(token, pool_address, note_id) -> Span<OpenNoteDeposit>` atomically: it validates the caller is the pool, reads the tokens the pool just sent, approves them back, emits `Invoked`, and returns an open-note deposit the pool credits as a private note. Its class is already declared on Mainnet + Sepolia, so the UI can deploy a fresh instance with a single UDC deploy (no constructor).
 
+**To build your own:** replace the echo body with a real protocol action (swap, vault deposit, lend). The `privacy_invoke` shape stays the same; only the middle changes. You own the review, `snforge` tests, and **audit** before mainnet.
+
+## Adapting this starter
+
+- **Token** → `addrSTRK` in `src/utils/constants.ts` (or make it a user selection).
+- **Amounts** → the `DEMO` amounts in `WalletAccountV6Tag.tsx` (replace with real amount inputs).
+- **Helper contract** → point `Strk20EchoHelper*` at your deployed anonymizer; swap `cairo/src/lib.cairo` for your real one.
+- **Branding** → title/metadata in `src/app/layout.tsx`, the `2Ø`/STRK20 mark in the nav (`src/app/page.tsx`, `public/tokens/`), and copy in `page.tsx`.
+
+## Deploy
+
+Standard Next.js — deploy to [Vercel](https://vercel.com/new) and set `NEXT_PUBLIC_PROVIDER_URL` (and optionally `NEXT_PUBLIC_STRK20_ECHO_HELPER_SEPOLIA`) as env vars.
+
+## Notes & caveats
+
+- **Privacy wallets:** Ready today; Xverse's dapp-facing Wallet API is landing. Other wallets aren't STRK20-ready — the app degrades gracefully.
+- **Testnet first.** Deposit amounts are the public ERC-20 legs and stay visible; the pool enforces deposit screening on-chain.
+- Method names on the `next`-tag releases can drift — cross-check against the [WalletAccount guide](https://starknet-js.com/docs/next/guides/account/walletAccount/#with-get-starknet-v6).
+
+## Links
+
+- STRK20 by example: https://strk20-by-example.org/
+- Privacy SDK monorepo: https://github.com/starkware-libs/starknet-privacy
+- Wallet test dapp: https://starknet-wallet-account.vercel.app/
+
+## Credits
+
+Bootstrapped from [PhilippeR26/Starknet-WalletAccount](https://github.com/PhilippeR26/Starknet-WalletAccount) (the wallet-API demo dapp), then trimmed and refocused into a STRK20 privacy starter.

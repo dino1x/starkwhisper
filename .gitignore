@@ -43,3 +43,7 @@ A1priv/A1priv.ts
 /A1priv/
 
 /target
+.gstack/
+
+# cairo build artifacts
+/cairo/target/

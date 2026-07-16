@@ -1,31 +1,45 @@
-import { ProviderInterface, RpcProvider, constants as SNconstants } from "starknet";
-import { WALLET_API } from "@starknet-io/types-js";
+import { ProviderInterface, RpcProvider } from "starknet";
 
+// ─── Example config — swap these for your own token / pool / helper ─────────
 
-export const addrETH = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7";
+// DEMO VALUE: the ERC-20 this starter shields. Replace with the token your app
+// moves privately (STRK on Starknet here).
 export const addrSTRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
-export const addrTEST = "0x07394cBe418Daa16e42B87Ba67372d4AB4a5dF0B05C6e554D158458Ce245BC10";
-export const addrLORDtestnet = "0x019c92fa87f4d5e3bE25C3DD6a284f30282a07e87cd782f5Fd387B82c8142017";
-export const addrLORDmainnet = "0x0124aeb495b947201f5faC96fD1138E326AD86195B98df6DEc9009158A533B49";
-export type CommandWallet = keyof WALLET_API.RpcTypeToMessageMap;
 
-export type StarknetChainIdEntry = keyof typeof SNconstants.StarknetChainId;
-
+// Frontend RPC providers, indexed. The STRK20 privacy pool lives on Mainnet (0)
+// and Sepolia (2); index 1 is a spare public testnet endpoint. NEXT_PUBLIC_PROVIDER_URL
+// is your Alchemy key (see .env.example).
 export const myFrontendProviders: ProviderInterface[] = [
     new RpcProvider({ nodeUrl: "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_10/" + process.env.NEXT_PUBLIC_PROVIDER_URL }),
     new RpcProvider({ nodeUrl: "https://starknet-testnet.public.blastapi.io/rpc/v0_7" }),
     new RpcProvider({ nodeUrl: "https://starknet-sepolia.g.alchemy.com/starknet/version/rpc/v0_10/" + process.env.NEXT_PUBLIC_PROVIDER_URL })];
 
-// STRK20 echo invoke helper (Mainnet) — round-trips STRK through an open note.
+// ─── Example anonymizer (echo helper) ───────────────────────────────────────
+// DEMO CONTRACT: StrkInvokeHelper (cairo/src/lib.cairo) just round-trips STRK
+// through an open note to exercise the privacy_invoke flow end to end. Replace
+// with your real anonymizer that performs an actual protocol action.
+
+// DEMO VALUE: echo helper deployed on Mainnet.
 export const Strk20EchoHelperAddress = "0x78ae662e0cc6d1ab2cfeaf2a51ba8783d88e31886f88a794d142f95a6f8735b";
 
-export const RejectContractAddress: string[] = [
-    "0x541b0409e65bf546ff6c3090f4c07c53938b20c1f659250b84ce5eb66d4485e", // mainnet
-    "0x00", // testnet deprecated
-    "0x4d0f60ba43be97d44257a77e6123f11df89350396480af6ed0cbc81c8179592", // sepolia
-];
+// Echo helper on Sepolia — set NEXT_PUBLIC_STRK20_ECHO_HELPER_SEPOLIA to enable the
+// Echo action there. "0x0" = not deployed (the action stays disabled). Deploy a fresh
+// instance from the Echo tab, then paste the address into .env.local.
+export const Strk20EchoHelperSepolia = process.env.NEXT_PUBLIC_STRK20_ECHO_HELPER_SEPOLIA ?? "0x0";
 
-// OpenZeppelin 0.8.1. Exists in Mainnet & Sepolia
-export const accountClass = "0x061dac032f228abef9c6626f995015233097ae253a7f72d68552db02f2971b8f";
+// Declared class hash of the echo helper (Mainnet + Sepolia). Deploying a fresh
+// instance (no constructor args) needs only this class hash + a signed UDC deploy.
+// See cairo/address.md.
+export const Strk20EchoHelperClassHash = "0x2a4482a13cb7f70dce6f7ba99c4ee6ce404379abeddd9b831b6bf24eb71e137";
 
-export const compatibleApiVersions: string[] = ["0.7", "0.10"];
+// Resolve the echo helper for a frontend provider index (0 = Mainnet, 2 = Sepolia).
+// Returns "0x0" when no helper is deployed on that network.
+export function echoHelperForIndex(index: number): string {
+    if (index === 0) return Strk20EchoHelperAddress;
+    if (index === 2) return Strk20EchoHelperSepolia;
+    return "0x0";
+}
+
+// Frontend provider indices where the STRK20 privacy pool is available, mapped to a
+// display name. Used to gate the WalletAccountV6 STRK20 actions.
+export const Strk20Networks: Record<number, string> = { 0: "MAINNET", 2: "SEPOLIA" };

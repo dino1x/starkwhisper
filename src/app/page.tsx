@@ -1,127 +1,83 @@
 "use client";
 
-import Image from 'next/image'
-import styles from './page.module.css'
-import { Center, Box, Tabs } from '@chakra-ui/react';
-import { Button } from "@chakra-ui/react";
-import { Provider } from "@/components/ui/provider";
-import { CairoBytes31 } from 'starknet';
-import InteractContract from './components/client/Contract/InteractContract';
-import { useStoreWallet } from './components/Wallet/walletContext';
-import starknetJsImg from '../../public/Images/StarkNet-JS_logo.png';
-import WalletApiTag from './components/client/WalletHandle/WalletApiTag';
+import type { CSSProperties } from 'react';
+import styles from './uni.module.css';
 import SelectWallet from './components/client/WalletHandle/SelectWallet';
-import WalletAccountTag from './components/client/WalletHandle/WalletAccountTag';
 import WalletAccountV6Tag from './components/client/WalletHandle/WalletAccountV6Tag';
-import { useFrontendProvider } from './components/client/provider/providerContext';
-import LowerBanner from "./components/client/LowerBanner";
+import { StrkCoin, BtcCoin, EthCoin, UsdcCoin, ZecCoin } from './components/TokenIcons';
+
+// Scattered, blurred token coins on the sides of the page (background ambience).
+type BgToken = {
+  Coin: (p: { size?: number }) => React.ReactElement;
+  pos: CSSProperties;
+  size: number;
+  blur: number;
+  opacity: number;
+};
+const BG_TOKENS: BgToken[] = [
+  // Left edge
+  { Coin: StrkCoin, pos: { top: '30%', left: '3%' }, size: 116, blur: 5, opacity: 0.55 },
+  { Coin: BtcCoin, pos: { top: '38%', left: '18%' }, size: 92, blur: 4, opacity: 0.5 },
+  { Coin: ZecCoin, pos: { top: '64%', left: '9%' }, size: 140, blur: 6, opacity: 0.5 },
+  { Coin: EthCoin, pos: { top: '11%', left: '22%' }, size: 84, blur: 4, opacity: 0.5 },
+  { Coin: UsdcCoin, pos: { top: '86%', left: '20%' }, size: 104, blur: 5, opacity: 0.5 },
+  // Right edge
+  { Coin: EthCoin, pos: { top: '7%', right: '18%' }, size: 128, blur: 5, opacity: 0.55 },
+  { Coin: BtcCoin, pos: { top: '12%', right: '4%' }, size: 96, blur: 4, opacity: 0.5 },
+  { Coin: StrkCoin, pos: { top: '54%', right: '6%' }, size: 132, blur: 6, opacity: 0.55 },
+  { Coin: UsdcCoin, pos: { top: '76%', right: '9%' }, size: 104, blur: 5, opacity: 0.5 },
+  { Coin: ZecCoin, pos: { top: '88%', right: '20%' }, size: 100, blur: 5, opacity: 0.48 },
+  // Center accents (top & bottom)
+  { Coin: BtcCoin, pos: { top: '5%', left: '42%' }, size: 116, blur: 5, opacity: 0.45 },
+  { Coin: StrkCoin, pos: { bottom: '-1%', left: '48%' }, size: 124, blur: 6, opacity: 0.48 },
+];
 
 export default function Page() {
-  const addressAccountFromContext = useStoreWallet(state => state.address);
-  const { setAddressAccount } = useStoreWallet(state => state);
-
-  const myFrontendProviderIndex = useFrontendProvider(state => state.currentFrontendProviderIndex);
-  const { setCurrentFrontendProviderIndex } = useFrontendProvider(state => state);
-
-  const myWallet = useStoreWallet(state => state.StarknetWalletObject);
-  const setMyWallet = useStoreWallet(state => state.setMyStarknetWalletObject);
-
-  const chainFromContext = useStoreWallet(state => state.chain);
-  const { setChain } = useStoreWallet(state => state);
-
-  
-  const providerFromContext = useStoreWallet(state => state.provider);
-  const { setProvider } = useStoreWallet(state => state);
-
-  const { isConnected, setConnected } = useStoreWallet(state => state);
-
-
   return (
-    <Provider>
-      <div>
-        <p className={styles.bgText}>
-          Test WalletAccountV6 of Starknet.js v10.4.0 <br></br>
-          with get-starknet v6.0.2
-        </p>
-        <Center>
-          <Image src={starknetJsImg} alt='starknet.js' width={150} />
-        </Center>
-        <div>
-          {!isConnected ? (
-            <>
-              
-                 <SelectWallet></SelectWallet>
-              
-            </>
-          ) : (
-            <>
-              <Center>
-                <Button
-                  variant="surface"
-                  textDecoration="none !important"
-                  fontWeight='bold'
-                  outline="none !important"
-                  boxShadow="none !important"
-                  mt={3}
-                  px={5}
-                  onClick={() => {
-                    setConnected(false);
-                  }}
-                >
-                  {addressAccountFromContext
-                    ? `Your wallet : ${addressAccountFromContext?.slice(0, 7)}...${addressAccountFromContext?.slice(-4)} is connected`
-                    : "No Account"}
-                </Button>
-              </Center>
-              <br />
-              <Tabs.Root
-                variant="enclosed"
-                colorScheme='facebook'
-                size="lg"
-                defaultValue="blockChain"
-                fitted >
-                <Tabs.List bg="bg.muted" rounded="l3" p="1" >
+    <div className={styles.page}>
+      <div className={styles.aurora} aria-hidden>
+        {BG_TOKENS.map((t, i) => (
+          <span
+            key={i}
+            className={styles.tok}
+            style={{ ...t.pos, filter: `blur(${t.blur}px)`, opacity: t.opacity }}
+          >
+            <t.Coin size={t.size} />
+          </span>
+        ))}
+      </div>
 
-                  <Tabs.Trigger fontWeight={"bold"} value="blockChain"> BlockChain</Tabs.Trigger>
-                  <Tabs.Trigger fontWeight={"bold"} value="walletAPI"> Wallet API</Tabs.Trigger>
-                  <Tabs.Trigger fontWeight={"bold"} value="walletAccount"> WalletAccount</Tabs.Trigger>
-                  <Tabs.Trigger fontWeight={"bold"} value="walletAccountV6"> WalletAccountV6</Tabs.Trigger>
-                </Tabs.List>
-                <Tabs.Content value="blockChain">
-                  <Box bg='pink.200' color='black' borderWidth='1px' borderRadius='md'>
-                    <p className={styles.text1}>
-                      address = {addressAccountFromContext}<br />
-                      chain = {chainFromContext != "" ? new CairoBytes31(chainFromContext).decodeUtf8() : ""}
-                      <br />
-                      provider = the frontend provider uses {myFrontendProviderIndex == 0 ? "MAINNET" : "TESTNET"
-                      }
-                      <br />
-                      isConnected={isConnected ? "Yes" : "No"}
-
-                    </p>
-                  </Box>
-                  {!!providerFromContext &&
-                    <InteractContract ></InteractContract>}
-                </Tabs.Content>
-                <Tabs.Content value="walletAPI">
-                  <p></p>
-                  <WalletApiTag></WalletApiTag>
-                </Tabs.Content>
-                <Tabs.Content value="walletAccount">
-                  <WalletAccountTag></WalletAccountTag>
-                </Tabs.Content>
-                <Tabs.Content value="walletAccountV6">
-                  <WalletAccountV6Tag></WalletAccountV6Tag>
-                </Tabs.Content>
-              </Tabs.Root>
-            </>
-          )
-          }
+      <nav className={styles.nav}>
+        <div className={styles.brand}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/tokens/strk20.png" alt="STRK20" className={styles.brandImg} />
         </div>
-        <LowerBanner></LowerBanner>
-      </div >
-    </Provider >
-  )
+        <SelectWallet variant="nav" />
+      </nav>
+
+      <header className={styles.hero}>
+        <h1 className={styles.heroTitle}>
+          Move STRK,
+          <br />
+          <span className={styles.heroAccent}>shielded.</span>
+        </h1>
+        <p className={styles.heroSub}>
+          Shield, unshield and privately transfer STRK on Starknet through the
+          WalletAccountV6 privacy pool.
+        </p>
+      </header>
+
+      <main>
+        <WalletAccountV6Tag />
+      </main>
+
+      <footer className={styles.footer}>
+        <a href="https://github.com/PhilippeR26/Starknet-WalletAccount" target="_blank" rel="noreferrer">
+          Repo
+        </a>
+        <span className={styles.footerDot}>·</span>
+        <span>Powered by Starknet.js v10.4.0</span>
+      </footer>
+    </div>
+  );
 }
-
-

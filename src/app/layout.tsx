@@ -1,10 +1,24 @@
 import type { Metadata } from 'next'
+import { Inter, Space_Mono } from 'next/font/google'
 import './globals.css'
-import { Provider } from "@/components/ui/provider"
+
+// Clean neutral grotesque for everything (matches the Uniswap reference); a mono
+// only for hex addresses / hashes.
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-body',
+  display: 'swap',
+})
+const spaceMono = Space_Mono({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-mono-ui',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: 'Starknet-WalletAccount',
-  description: 'test of WalletAccount for Starknet',
+  title: 'Shielded STRK · WalletAccountV6',
+  description: 'Shield, unshield and privately move STRK on Starknet with WalletAccountV6',
   icons: {
     icon: "./favicon.ico",
   },
@@ -16,12 +30,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body>
-        <Provider>
-          {children}
-        </Provider>
-      </body>
+    <html
+      lang="en"
+      className={`${inter.variable} ${spaceMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body>{children}</body>
     </html>
   )
 }
