@@ -62,8 +62,8 @@ export default function Page() {
           <span className={styles.heroAccent}>Everything</span>
         </h1>
         <p className={styles.heroSub}>
-          Shield, unshield, privately transfer and private custom functions on
-          Starknet.
+          Shield, unshield, privately transfer and build your own private apps
+          on Starknet.
         </p>
       </header>
 
