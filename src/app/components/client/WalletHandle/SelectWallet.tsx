@@ -52,8 +52,12 @@ export default function SelectWallet({ variant = "ctaBig" }: { variant?: "nav" |
     return () => unsub();
   }, []);
 
-  // Show every detected wallet except MetaMask (its Snap probing spams an unlock popup).
-  const pickable = wallets.filter((w) => !normalizeId(w.name).includes("metamask"));
+  // Show every detected wallet except MetaMask (its Snap probing spams an unlock popup)
+  // and Braavos (excluded from this starter's picker).
+  const pickable = wallets.filter((w) => {
+    const id = normalizeId(w.name);
+    return !id.includes("metamask") && !id.includes("braavos");
+  });
 
   // Unchanged connection flow: takes the wallet-standard wallet and populates
   // the zustand store with a WalletAccountV6 + account/chain/permissions.
