@@ -19,9 +19,6 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: 'Shielded STRK · WalletAccountV6',
   description: 'Shield, unshield and privately move STRK on Starknet with WalletAccountV6',
-  icons: {
-    icon: "./favicon.ico",
-  },
 }
 
 export default function RootLayout({
