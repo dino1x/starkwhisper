@@ -1,0 +1,22 @@
+{
+  "name": "StarkWhisper",
+  "description": "Metadata-resistant, encrypted on-chain messaging & private payment memos on Starknet powered by the STRK20 Privacy Pool.",
+  "repository": "https://github.com/dino1x/starkwhisper",
+  "demo": "https://starkwhisper.vercel.app",
+  "starknetAddress": "0x01dc5a1c99182fa189382103e48810291ba81927a",
+  "contracts": [
+    {
+      "name": "MessagingAnonymizer",
+      "address": "0x78ae662e0cc6d1ab2cfeaf2a51ba8783d88e31886f88a794d142f95a6f8735b",
+      "network": "sepolia"
+    }
+  ],
+  "demoVideo": "https://youtu.be/placeholder-starkwhisper-demo",
+  "team": [
+    {
+      "github": "dino1x",
+      "telegram": "@marvelmarvinn",
+      "role": "Full-stack & Cairo Developer"
+    }
+  ]
+}

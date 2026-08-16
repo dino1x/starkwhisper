@@ -32,6 +32,16 @@ export const Strk20EchoHelperSepolia = process.env.NEXT_PUBLIC_STRK20_ECHO_HELPE
 // See cairo/address.md.
 export const Strk20EchoHelperClassHash = "0x2a4482a13cb7f70dce6f7ba99c4ee6ce404379abeddd9b831b6bf24eb71e137";
 
+// Messaging Anonymizer helper address (Mainnet / Sepolia fallback)
+export const MessagingHelperMainnet = process.env.NEXT_PUBLIC_MESSAGING_HELPER_MAINNET ?? "0x78ae662e0cc6d1ab2cfeaf2a51ba8783d88e31886f88a794d142f95a6f8735b";
+export const MessagingHelperSepolia = process.env.NEXT_PUBLIC_MESSAGING_HELPER_SEPOLIA ?? "0x78ae662e0cc6d1ab2cfeaf2a51ba8783d88e31886f88a794d142f95a6f8735b";
+
+export function messagingHelperForIndex(index: number): string {
+    if (index === 0) return MessagingHelperMainnet;
+    if (index === 2) return MessagingHelperSepolia;
+    return MessagingHelperSepolia;
+}
+
 // Resolve the echo helper for a frontend provider index (0 = Mainnet, 2 = Sepolia).
 // Returns "0x0" when no helper is deployed on that network.
 export function echoHelperForIndex(index: number): string {
@@ -43,3 +53,4 @@ export function echoHelperForIndex(index: number): string {
 // Frontend provider indices where the STRK20 privacy pool is available, mapped to a
 // display name. Used to gate the WalletAccountV6 STRK20 actions.
 export const Strk20Networks: Record<number, string> = { 0: "MAINNET", 2: "SEPOLIA" };
+
