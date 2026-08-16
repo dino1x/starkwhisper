@@ -40,7 +40,10 @@
   ],
   "exclude": [
     "node_modules",
+    "scripts/**/*",
+    "**/*.test.ts",
     "old/**/*",
     "doc"
   ]
 }
+
