@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { num } from "starknet";
 import type { WALLET_API } from "@starknet-io/types-js";
 import { useStoreWallet } from "../Wallet/walletContext";
-import { useFrontendProvider } from "../provider/providerContext";
+import { useFrontendProvider } from "../client/provider/providerContext";
 import * as constants from "@/utils/constants";
 import {
   deriveChannelId,
