@@ -16,7 +16,8 @@ pub trait IErc20<TState> {
 
 #[starknet::interface]
 pub trait IMessagingAnonymizer<TState> {
-    fn privacy_invoke_post_message(
+    // Called by the privacy pool via selector!("privacy_invoke").
+    fn privacy_invoke(
         ref self: TState,
         token: ContractAddress,
         pool_address: ContractAddress,
@@ -73,7 +74,7 @@ mod MessagingAnonymizer {
 
     #[abi(embed_v0)]
     impl MessagingImpl of super::IMessagingAnonymizer<ContractState> {
-        fn privacy_invoke_post_message(
+        fn privacy_invoke(
             ref self: ContractState,
             token: ContractAddress,
             pool_address: ContractAddress,
