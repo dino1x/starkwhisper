@@ -35,19 +35,19 @@ const SEED_CONTACTS = [
   {
     address: "0x01dc5a1c99182fa189382103e48810291ba81927a",
     name: "Alice (Core Contributor)",
-    avatar: "🅰️",
+    avatar: "A",
     badge: "Core Dev",
   },
   {
     address: "0x04829fa7c3209118a8a91c1099238910aa189281b",
     name: "Bob (Starknet Auditor)",
-    avatar: "🅱️",
+    avatar: "B",
     badge: "Auditor",
   },
   {
     address: "0x07398129031cba77112048991209381920381029a",
     name: "Charlie (Privacy Pool LP)",
-    avatar: "🅲",
+    avatar: "C",
     badge: "Liquidity",
   },
 ];
@@ -268,7 +268,7 @@ export default function StarkWhisperApp() {
       {/* Success Toast */}
       {toastNotification && (
         <div className={styles.toast}>
-          <span>🛡️ {toastNotification}</span>
+          <span>[CONFIRMED] {toastNotification}</span>
         </div>
       )}
 
@@ -326,7 +326,6 @@ export default function StarkWhisperApp() {
           <div className={styles.contactList}>
             {filteredContacts.length === 0 ? (
               <div className={styles.emptyState}>
-                <div style={{ fontSize: 24, marginBottom: 8 }}>🔍</div>
                 <div style={{ fontWeight: 600 }}>No conversations found</div>
                 <div style={{ fontSize: 12, color: "#6B7280" }}>Try adding an address or .stark name above</div>
               </div>
@@ -339,7 +338,7 @@ export default function StarkWhisperApp() {
                     onClick={() => setActiveContact(contact)}
                     className={`${styles.contactItem} ${isSelected ? styles.contactItemActive : ""}`}
                   >
-                    <span style={{ fontSize: 20 }}>{contact.avatar}</span>
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>{contact.avatar}</span>
                     <div className={styles.contactItemDetails}>
                       <div className={styles.contactItemName}>{contact.name}</div>
                       <div className={styles.contactItemAddr}>{shortHex(contact.address)}</div>
@@ -370,7 +369,6 @@ export default function StarkWhisperApp() {
           <div className={styles.messageStream}>
             {activeMessages.length === 0 ? (
               <div className={styles.emptyStream}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>🤫</div>
                 <h3 style={{ fontFamily: "Space Grotesk", fontSize: 20, marginBottom: 6 }}>
                   No messages in this lane yet
                 </h3>
@@ -387,7 +385,6 @@ export default function StarkWhisperApp() {
                   <div className={`${styles.bubble} ${msg.isSelf ? styles.bubbleSelf : styles.bubblePeer}`}>
                     {msg.hasPayment && (
                       <div className={styles.paymentBanner}>
-                        <span>💸</span>
                         <span>
                           PRIVATE STRK PAYMENT ATTACHED: <strong>{msg.paymentAmount}</strong>
                         </span>
@@ -472,7 +469,7 @@ export default function StarkWhisperApp() {
                 disabled={isProving || !messageText.trim()}
                 className={styles.sendBtn}
               >
-                {isProving ? "PROVING ZK..." : "SEND ENCRYPTED 🔒"}
+                {isProving ? "PROVING ZK..." : "SEND ENCRYPTED"}
               </button>
             </div>
           </div>

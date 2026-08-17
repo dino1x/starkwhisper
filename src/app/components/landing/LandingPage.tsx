@@ -65,7 +65,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
 
           <div className={styles.heroActions}>
             <button onClick={onLaunchDapp} className={styles.ctaPrimary}>
-              Launch Interactive dApp 🔒
+              Launch Interactive dApp
             </button>
             <a
               href="https://github.com/dino1x/starkwhisper"
@@ -133,7 +133,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
               {/* Encrypted Output Column */}
               <div className={styles.demoOutput}>
                 <div className={styles.outputHeader}>
-                  <span>🔒 ON-CHAIN CIPHERTEXT (CALLEDDATA FELT PACKING)</span>
+                  <span>ON-CHAIN CIPHERTEXT (CALLEDDATA FELT PACKING)</span>
                 </div>
 
                 <div>
@@ -165,10 +165,10 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
         <section className={styles.proofSection}>
           <div className={styles.proofTitle}>POWERED BY STARKNET & STRK20 INFRASTRUCTURE</div>
           <div className={styles.proofLogos}>
-            <div className={styles.logoItem}>⚡ Starknet Mainnet</div>
-            <div className={styles.logoItem}>🔒 STRK20 Pool</div>
-            <div className={styles.logoItem}>🔑 ECDH Key Agreement</div>
-            <div className={styles.logoItem}>👛 Argent X & Braavos</div>
+            <div className={styles.logoItem}>Starknet Mainnet</div>
+            <div className={styles.logoItem}>STRK20 Pool</div>
+            <div className={styles.logoItem}>ECDH Key Agreement</div>
+            <div className={styles.logoItem}>Argent X & Braavos</div>
           </div>
         </section>
 
@@ -184,7 +184,6 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
 
           <div className={styles.problemGrid}>
             <div className={styles.problemCard}>
-              <div className={styles.cardIcon}>👁️</div>
               <h3 className={styles.cardTitle}>Public Balance Exposure</h3>
               <p className={styles.cardText}>
                 Every time you pay someone from a public address, they can inspect your entire wallet history and total net worth on block explorers.
@@ -192,7 +191,6 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
             </div>
 
             <div className={styles.problemCard}>
-              <div className={styles.cardIcon}>📄</div>
               <h3 className={styles.cardTitle}>Transparent Payment Memos</h3>
               <p className={styles.cardText}>
                 Invoice notes, contract negotiations, and business details attached to transactions remain permanently readable by anyone.
@@ -200,7 +198,6 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
             </div>
 
             <div className={styles.problemCard}>
-              <div className={styles.cardIcon}>🔗</div>
               <h3 className={styles.cardTitle}>Counterparty Tracking</h3>
               <p className={styles.cardText}>
                 Interactions create permanent public linkability between your identity and everyone you communicate or trade with.
@@ -358,7 +355,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
             Experience metadata-resistant messaging and private payment memos on Starknet mainnet today.
           </p>
           <button onClick={onLaunchDapp} className={styles.ctaPrimary} style={{ fontSize: 18, padding: "18px 40px" }}>
-            Launch StarkWhisper dApp 🔒
+            Launch StarkWhisper dApp
           </button>
         </section>
 
