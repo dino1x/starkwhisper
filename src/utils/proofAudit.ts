@@ -1,38 +1,48 @@
-import { hash, num } from "starknet";
+import { ProviderInterface, num } from "starknet";
+import { Strk20EchoHelperClassHash } from "./constants";
 
-export interface ContractAuditResult {
-  isVerifiedClassHash: boolean;
-  classHash: string;
+export interface AuditReport {
   contractAddress: string;
-  supportsPrivacyInvoke: boolean;
-  supportsMessagingAnonymizer: boolean;
-  auditTimestamp: number;
+  actualClassHash: string;
+  expectedClassHash: string;
+  isVerified: boolean;
+  timestamp: number;
 }
 
-const KNOWN_ANONYMIZER_CLASS_HASHES = new Set([
-  "0x05a61129381928a7192837192837192837192837192837192837192837192837",
-  "0x07398129031cba77112048991209381920381029a1293871928371928371928",
-]);
-
 /**
- * Client-Side Pre-Flight Contract Verification.
- * Inspects Cairo contract class_hashes and ABI method signatures before transaction submission.
+ * Pre-Flight Contract Verification Audit Engine.
+ * Queries Starknet node RPC for the deployed contract's actual class_hash
+ * and compares it against the declared canonical Strk20EchoHelperClassHash.
  */
 export async function auditAnonymizerContract(
-  contractAddress: string
-): Promise<ContractAuditResult> {
-  const derivedClassHash = num.toHex(
-    hash.computeHashOnElements([num.toBigInt(contractAddress).toString(), "class_hash"])
-  );
+  contractAddress: string,
+  provider: ProviderInterface
+): Promise<AuditReport> {
+  const timestamp = Date.now();
+  const expectedClassHash = Strk20EchoHelperClassHash;
 
-  const isVerified = KNOWN_ANONYMIZER_CLASS_HASHES.has(derivedClassHash) || contractAddress.startsWith("0x0");
+  try {
+    const fetchedClassHash = await provider.getClassHashAt(contractAddress);
+    const actualClassHash = num.toHex(fetchedClassHash);
 
-  return {
-    isVerifiedClassHash: isVerified,
-    classHash: derivedClassHash,
-    contractAddress,
-    supportsPrivacyInvoke: true,
-    supportsMessagingAnonymizer: true,
-    auditTimestamp: Date.now(),
-  };
+    const isVerified =
+      actualClassHash.toLowerCase() === expectedClassHash.toLowerCase() ||
+      num.toBigInt(actualClassHash) === num.toBigInt(expectedClassHash);
+
+    return {
+      contractAddress,
+      actualClassHash,
+      expectedClassHash,
+      isVerified,
+      timestamp,
+    };
+  } catch {
+    return {
+      contractAddress,
+      actualClassHash: "0x0 (Un-deployed / Unavailable)",
+      expectedClassHash,
+      isVerified: false,
+      timestamp,
+    };
+  }
 }

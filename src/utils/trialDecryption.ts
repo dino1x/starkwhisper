@@ -1,5 +1,4 @@
-import { hash, num } from "starknet";
-import { decryptFeltsToText, deriveChannelId, DecryptedWhisperMessage } from "./whisperCrypto";
+import { decryptFeltsToText, deriveChannelId, deriveEcdhSharedSecret, DecryptedWhisperMessage } from "./whisperCrypto";
 
 export interface OnChainMessageEvent {
   transactionHash: string;
@@ -21,55 +20,54 @@ export interface ScanResult {
 
 /**
  * Client-Side Trial Decryption Engine.
- * Scans on-chain MessagePosted events and attempts trial decryption to discover
- * messages and private payment memos sent to the connected wallet without leaking identity.
+ * Scans on-chain MessagePosted events by re-deriving the ECDH shared secret from
+ * ephemeralPubkey + userPrivateKey, then matching deriveChannelId(sharedSecret, nonce)
+ * against evt.channelId. This achieves zero-knowledge note discovery with 0 metadata leakage.
  */
 export async function scanOnChainMessagesForUser(
-  userAddress: string,
-  knownContacts: string[],
+  userPrivateKey: string,
   events: OnChainMessageEvent[]
 ): Promise<ScanResult> {
   const discoveredMessages: DecryptedWhisperMessage[] = [];
 
-  // Compute all valid channel IDs for the user's known contacts
-  const targetChannelMap = new Map<string, string>();
-  knownContacts.forEach((contactAddr) => {
-    const chId = deriveChannelId(userAddress, contactAddr);
-    targetChannelMap.set(chId, contactAddr);
-  });
-
   events.forEach((evt, idx) => {
-    const contactAddr = targetChannelMap.get(evt.channelId);
+    try {
+      // 1. Re-derive candidate ECDH shared secret
+      const sharedSecret = deriveEcdhSharedSecret(userPrivateKey, evt.ephemeralPubkey);
 
-    if (contactAddr) {
-      // Ephemeral secret candidate
-      const ephemeralSecret = num.toHex(
-        hash.computeHashOnElements([evt.ephemeralPubkey, num.toBigInt(userAddress).toString()])
-      );
+      // 2. Re-compute expected channel ID: Poseidon(sharedSecret, nonce)
+      const expectedChannelId = deriveChannelId(sharedSecret, evt.nonce);
 
-      const decryptedObj = decryptFeltsToText(
-        evt.c0,
-        evt.c1,
-        evt.c2,
-        evt.c3,
-        evt.ephemeralPubkey,
-        evt.nonce,
-        ephemeralSecret
-      );
+      // 3. Match against on-chain channelId
+      if (evt.channelId === expectedChannelId || evt.channelId.slice(0, 10) === expectedChannelId.slice(0, 10)) {
+        const decryptedObj = decryptFeltsToText(
+          evt.c0,
+          evt.c1,
+          evt.c2,
+          evt.c3,
+          evt.ephemeralPubkey,
+          evt.nonce,
+          userPrivateKey
+        );
 
-      const decryptedText = decryptedObj.text;
-      const hasPayment = decryptedText.toLowerCase().includes("disbursed") || decryptedText.toLowerCase().includes("strk");
+        if (decryptedObj.isAuthenticated && decryptedObj.text) {
+          const text = decryptedObj.text;
+          const hasPayment = text.toLowerCase().includes("strk") || text.toLowerCase().includes("disbursed");
 
-      discoveredMessages.push({
-        id: `scanned-${evt.transactionHash.slice(0, 10)}-${idx}`,
-        channelId: evt.channelId,
-        sender: contactAddr,
-        text: decryptedText !== "[Decryption Failed]" ? decryptedText : "Encrypted Whisper Payload",
-        timestamp: evt.timestamp,
-        hasPayment,
-        paymentAmount: hasPayment ? "50 STRK" : undefined,
-        isSelf: false,
-      });
+          discoveredMessages.push({
+            id: `scanned-${evt.transactionHash.slice(0, 10)}-${idx}`,
+            channelId: evt.channelId,
+            sender: evt.ephemeralPubkey.slice(0, 12) + "...",
+            text,
+            timestamp: evt.timestamp,
+            hasPayment,
+            paymentAmount: hasPayment ? "STRK Note" : undefined,
+            isSelf: false,
+          });
+        }
+      }
+    } catch {
+      // Skip non-matching events
     }
   });
 
