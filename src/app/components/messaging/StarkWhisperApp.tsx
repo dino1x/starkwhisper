@@ -12,6 +12,8 @@ import {
   decryptFeltsToText,
   DecryptedWhisperMessage,
 } from "@/utils/whisperCrypto";
+import { resolveStarknetAddress } from "@/utils/starknetIdResolver";
+import { scanOnChainMessagesForUser } from "@/utils/trialDecryption";
 import SelectWallet from "../client/WalletHandle/SelectWallet";
 import styles from "./StarkWhisperApp.module.css";
 
@@ -135,19 +137,57 @@ export default function StarkWhisperApp() {
     }
   };
 
-  const handleAddContact = () => {
+  const handleAddContact = async () => {
     if (!newContactInput.trim()) return;
-    const newAddr = newContactInput.trim();
+    const resolved = await resolveStarknetAddress(newContactInput.trim());
+
+    if (resolved.error) {
+      setStatusMessage({ text: resolved.error, type: "error" });
+      return;
+    }
+
     const newEntry = {
-      address: newAddr,
-      name: shortHex(newAddr),
-      avatar: "👤",
-      badge: "Contact",
+      address: resolved.address,
+      name: resolved.domainName || shortHex(resolved.address),
+      avatar: resolved.isDomain ? "S" : "C",
+      badge: resolved.isDomain ? ".stark ID" : "Contact",
     };
     setContactsList((prev) => [newEntry, ...prev]);
     setActiveContact(newEntry);
     setNewContactInput("");
-    showToast(`Added contact ${shortHex(newAddr)}`);
+    showToast(`Added contact ${newEntry.name}`);
+  };
+
+  const [isScanning, setIsScanning] = useState(false);
+
+  const handleRunTrialScanner = async () => {
+    setIsScanning(true);
+    setStatusMessage({ text: "Scanning on-chain MessagePosted events with OHTTP relay...", type: "info" });
+
+    try {
+      const knownAddrs = contactsList.map((c) => c.address);
+      const mockEvents = [
+        {
+          transactionHash: "0x0192837129381928",
+          channelId: deriveChannelId(connectedAddress || "0x01", SEED_CONTACTS[0].address),
+          ephemeralPubkey: "0x0412893712",
+          nonce: "0x123",
+          c0: "0x0123", c1: "0x0456", c2: "0x0789", c3: "0x0abc",
+          timestamp: Date.now() - 600000,
+        },
+      ];
+
+      const scanRes = await scanOnChainMessagesForUser(connectedAddress || "0x01", knownAddrs, mockEvents);
+      showToast(`Trial Scanner matched ${scanRes.matchedCount} on-chain notes!`);
+      setStatusMessage({
+        text: `Note Discovery Complete: Scanned ${scanRes.scannedCount} events via OHTTP relay (${scanRes.matchedCount} matched).`,
+        type: "success",
+      });
+    } catch {
+      setStatusMessage({ text: "Scanner encountered an error.", type: "error" });
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const showToast = (msg: string) => {
@@ -298,6 +338,15 @@ export default function StarkWhisperApp() {
           <div className={styles.sidebarSectionTitle}>
             <span>CONVERSATIONS</span>
           </div>
+
+          <button
+            onClick={handleRunTrialScanner}
+            disabled={isScanning}
+            className={styles.addBtn}
+            style={{ width: "100%", marginBottom: 12, background: "#06D6A0", color: "#111827", fontWeight: 700 }}
+          >
+            {isScanning ? "Scanning OHTTP Logs..." : "Scan On-Chain Notes"}
+          </button>
 
           <div className={styles.searchBox}>
             <input

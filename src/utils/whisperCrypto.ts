@@ -8,6 +8,7 @@ export interface EncryptedWhisperPayload {
   c1: string;
   c2: string;
   c3: string;
+  extraFelts?: string[];
 }
 
 export interface DecryptedWhisperMessage {
@@ -38,35 +39,32 @@ export function deriveChannelId(partyA: string, partyB: string): string {
 }
 
 /**
- * Simple XOR-XChaCha stream cipher simulation over 4 Starknet felts.
- * Encrypts UTF-8 text into 4 felts (c0..c3) that fit directly in Cairo calldata.
+ * Encrypts UTF-8 text into an arbitrary-length array of Cairo felts (c0..cN).
+ * Allows sending documents or long notes of unbounded size.
  */
-export function encryptTextToFelts(
+export function encryptTextToMultiFelts(
   text: string,
   ephemeralSecret: bigint = BigInt(Math.floor(Math.random() * 1e12))
 ): {
   nonce: string;
   ephemeralPubkey: string;
-  c0: string;
-  c1: string;
-  c2: string;
-  c3: string;
+  felts: string[];
 } {
   const nonce = num.toHex(BigInt(Date.now()));
   const ephemeralPubkey = num.toHex(hash.computeHashOnElements([ephemeralSecret.toString(), nonce]));
-  
-  // Convert text bytes into up to 4 chunk felts
+
   const encoder = new TextEncoder();
-  const bytes = Array.from(encoder.encode(text.slice(0, 120))); // Limit to ~120 chars for demo
-  const chunks: bigint[] = [0n, 0n, 0n, 0n];
+  const bytes = Array.from(encoder.encode(text));
+  const chunkSize = 30; // 30 bytes per 252-bit Cairo felt
+  const chunkCount = Math.max(1, Math.ceil(bytes.length / chunkSize));
+  const rawChunks: bigint[] = new Array(chunkCount).fill(0n);
 
   for (let i = 0; i < bytes.length; i++) {
-    const chunkIdx = Math.floor(i / 30);
-    chunks[chunkIdx] = (chunks[chunkIdx] << 8n) | BigInt(bytes[i]);
+    const chunkIdx = Math.floor(i / chunkSize);
+    rawChunks[chunkIdx] = (rawChunks[chunkIdx] << 8n) | BigInt(bytes[i]);
   }
 
-  // Mask each chunk with a pseudo-random key derived from Poseidon(ephemeralSecret, chunkIdx)
-  const felts = chunks.map((chunk, idx) => {
+  const felts = rawChunks.map((chunk, idx) => {
     const key = num.toBigInt(hash.computeHashOnElements([ephemeralSecret.toString(), idx.toString()]));
     const masked = chunk ^ key;
     return num.toHex(masked);
@@ -75,25 +73,18 @@ export function encryptTextToFelts(
   return {
     nonce,
     ephemeralPubkey,
-    c0: felts[0],
-    c1: felts[1],
-    c2: felts[2],
-    c3: felts[3],
+    felts,
   };
 }
 
 /**
- * Decrypts 4 Starknet felts (c0..c3) back into a UTF-8 string.
+ * Decrypts an arbitrary-length array of Cairo felts back into a UTF-8 string.
  */
-export function decryptFeltsToText(
-  c0: string,
-  c1: string,
-  c2: string,
-  c3: string,
+export function decryptMultiFeltsToText(
+  felts: string[],
   ephemeralSecret: bigint
 ): string {
   try {
-    const felts = [c0, c1, c2, c3];
     const bytes: number[] = [];
 
     felts.forEach((cHex, idx) => {
@@ -103,7 +94,6 @@ export function decryptFeltsToText(
 
       if (unmasked === 0n) return;
 
-      // Extract bytes from bigint
       let temp = unmasked;
       const chunkBytes: number[] = [];
       while (temp > 0n) {
@@ -118,4 +108,43 @@ export function decryptFeltsToText(
   } catch {
     return "[Decryption Failed]";
   }
+}
+
+/**
+ * Standard 4-felt stream cipher (backward-compatible).
+ */
+export function encryptTextToFelts(
+  text: string,
+  ephemeralSecret: bigint = BigInt(Math.floor(Math.random() * 1e12))
+): {
+  nonce: string;
+  ephemeralPubkey: string;
+  c0: string;
+  c1: string;
+  c2: string;
+  c3: string;
+} {
+  const res = encryptTextToMultiFelts(text, ephemeralSecret);
+  const f = res.felts;
+  return {
+    nonce: res.nonce,
+    ephemeralPubkey: res.ephemeralPubkey,
+    c0: f[0] || "0x0",
+    c1: f[1] || "0x0",
+    c2: f[2] || "0x0",
+    c3: f[3] || "0x0",
+  };
+}
+
+/**
+ * Decrypts 4 Starknet felts back into a UTF-8 string.
+ */
+export function decryptFeltsToText(
+  c0: string,
+  c1: string,
+  c2: string,
+  c3: string,
+  ephemeralSecret: bigint
+): string {
+  return decryptMultiFeltsToText([c0, c1, c2, c3], ephemeralSecret);
 }
