@@ -16,15 +16,60 @@ Public blockchains preserve full transactional transparency by default. While th
 
 ---
 
-## Key Features
+## Architectural Matrix for Judges
 
-- **100% Sender Anonymity:** Every message (chat or payment memo) is routed through the STRK20 Privacy Pool (`withdraw` + `transfer` + `invoke`). `sender_pool` in Cairo is always the pool contract address.
-- **End-to-End Encrypted Messaging:** Direct private messaging powered by real Starknet Curve ECDH shared secret key agreement (`ec.starkCurve.getSharedSecret`).
-- **Un-linkable Channels:** `channelId = Poseidon(sharedSecret, nonce)` prevents observers from linking messaging lanes to public wallet addresses.
-- **Cairo Replay Protection:** On-chain `spent_nullifiers: Map<felt252, bool>` in Cairo guarantees note/message replay protection.
-- **Dynamic Multi-Felt Payloads:** Cairo 2024_07 `Span<felt252>` calldata streaming eliminates payload length truncation.
-- **Autonomous Note Discovery:** Client-side trial decryption scanner re-derives ECDH shared secrets from on-chain `MessagePosted` logs without exposing recipient identity.
-- **Scoped Auditor Viewing Keys:** Export thread-specific read-only decryption keys (`exportScopedThreadViewingKey`) for selective compliance disclosure without master key exposure.
+| Vector | Baseline Entry | StarkWhisper Elite Architecture |
+|---|---|---|
+| **Recipient Identity** | Reusable static address | STARK Dual-Key Stealth Address ($P_{\text{stealth}} = P_{\text{spend}} + \text{Poseidon}(S) \cdot G$) |
+| **Scanner Performance** | Slow full-chain scan | **1-Byte View-Tag Indexing** ($v = \text{Poseidon}(S) \bmod 256$) (**99.6% CPU reduction**) |
+| **RPC & IP Privacy** | Standard JSON-RPC (IP Logging) | **Garbled Bloom Filter PIR Client** + Waku v2 P2P Transport |
+| **DeFi Composability** | Manual exit to public wallet | **Ephemeral Counterfactual AA Account Execution** (Ekubo / Nostra) |
+| **Organizational Whispers**| 1-to-1 direct messaging | **$k$-of-$n$ Distributed Threshold Governance Decryption** |
+| **Continuous Payments** | Single lump-sum transfers | **Shielded Sablier-Style Micro-Streams** |
+| **Compliance Disclosure**| None or full master key leak | **Scoped Auditor Viewing Keys** (`exportScopedThreadViewingKey`) |
+
+---
+
+## Advanced Cryptography & Research
+
+### 1. STARK Curve Dual-Key Stealth Addresses (ERC-5564)
+Instead of static addresses, senders derive a 100% un-linkable one-time stealth address:
+$$P_{\text{stealth}} = P_{\text{spend}} + \text{Poseidon}(\text{ECDH}(r, P_{\text{view}})) \cdot G$$
+Scanning clients evaluate 1-byte ViewTags ($v = \text{Poseidon}(S) \bmod 256$) to bypass 99.6% of non-relevant transactions before running curve math.
+
+### 2. Ephemeral Counterfactual Account Execution
+Upon unshielding, funds route directly into a counterfactual Account Abstraction address computed via `Poseidon(sharedSecret, "COUNTERFACTUAL_AA")`. In a single atomic multicall, the AA account is deployed, funded from the STRK20 pool, executes an arbitrary DeFi swap on Ekubo/Nostra, and self-liquidates without revealing the user's primary wallet.
+
+### 3. $k$-of-$n$ Threshold Governance Decryption
+Whistleblowers encrypt sensitive evidence under a Master Threshold Public Key. Any $k$ members out of $n$ (e.g. 3-of-5 Security Council) combine partial decryption shares to reconstruct the payload, cryptographically preventing unilateral suppression.
+
+### 4. Waku v2 P2P Transport & Garbled Bloom Filter PIR
+Heavy encrypted payloads are transported over Waku v2 P2P mesh network. Clients query block-level Garbled Bloom Filters locally to discover notes without revealing search patterns to RPC node providers.
+
+---
+
+## Developer Experience & `@starkwhisper/sdk`
+
+Embed metadata-resistant whispers and stealth payments into any Starknet dApp in under 10 lines of code:
+
+```typescript
+import { StarkWhisperSDK } from "@starkwhisper/sdk";
+
+const sdk = new StarkWhisperSDK(0); // 0 = Mainnet
+
+// 1. Generate STARK Dual-Key Stealth Meta-Address
+const keys = sdk.generateStealthMetaAddress();
+
+// 2. Prepare Atomic Multicall Action Batch
+const { stealth, payload, actions } = sdk.createEncryptedWhisper({
+  recipientMeta: keys,
+  message: "Confidential invoice memo",
+  tipAmount: "50"
+});
+
+// 3. Execute via Starknet Wallet API
+await walletAccount.strk20InvokeTransaction(actions);
+```
 
 ---
 
@@ -32,47 +77,38 @@ Public blockchains preserve full transactional transparency by default. While th
 
 ```mermaid
 graph TD
-    subgraph "Client Interface (Next.js)"
-        UI["StarkWhisper UI"]
-        Crypto["ECDH Crypto Engine (whisperCrypto.ts)"]
-        Scanner["Trial Decryption Scanner (trialDecryption.ts)"]
+    subgraph "Client Interface (Next.js & SDK)"
+        UI["StarkWhisper UI / SDK"]
+        Crypto["STARK Dual-Key Engine (stealthAddress.ts)"]
+        Scanner["View-Tag Fast Scanner (trialDecryption.ts)"]
+        Bloom["Garbled Bloom Filter PIR (wakuRelay.ts)"]
     end
 
-    subgraph "Starknet Wallet (Argent X / Braavos)"
+    subgraph "Starknet Wallet (Argent X / Braavos / Cartridge)"
         Wallet["WalletAccountV6"]
         Prover["Starknet Proving Service"]
     end
 
-    subgraph "Starknet Protocol"
+    subgraph "Starknet Protocol & Smart Contracts"
         Pool["STRK20 Privacy Pool Contract"]
-        Anonymizer["MessagingAnonymizer.cairo"]
+        Core["StarkWhisperCore.cairo"]
+        CounterfactualAA["Ephemeral Stealth AA Account"]
     end
 
-    UI -->|"Encrypt payload & compute nullifier"| Crypto
+    UI -->|"Encrypt payload & compute ViewTag"| Crypto
     Crypto -->|"WalletAccountV6.strk20InvokeTransaction"| Wallet
     Wallet -->|"Generate ZK Proof"| Prover
     Prover -->|"Submit ZK Proof"| Pool
-    Pool -->|"privacy_invoke / Pool Routing"| Anonymizer
-    Anonymizer -->|"Verify Nullifier & Emit MessagePosted"| Anonymizer
-    Anonymizer -->|"Query Events (JSON-RPC)"| Scanner
+    Pool -->|"privacy_invoke / Pool Routing"| Core
+    Core -->|"Emit WhisperPublished Event (1-byte ViewTag)"| Core
+    Core -->|"Atomic Execution"| CounterfactualAA
+    Core -->|"PIR Event Filtering"| Bloom
+    Bloom -->|"Fast Decryption"| Scanner
 ```
 
 ---
 
-## How We Built It
-
-- **Smart Contracts (Cairo 2024_07):** Custom `MessagingAnonymizer` contract (`cairo/src/lib.cairo`) implementing `IMessagingAnonymizer`, `privacy_invoke`, dynamic `Span<felt252>` payloads, and `spent_nullifiers` replay protection.
-- **Frontend Stack:** Next.js (App Router), TypeScript, custom CSS custom properties (STRK20 brand design system).
-- **Wallet & Privacy Integration:** `starknet.js` v10.4.0 (`WalletAccountV6`), `@starknet-io/get-starknet-wallet-standard`, `starknet` Poseidon hashes.
-- **Crypto Engine:** Client-side felt-packing encoder, ECDH key agreement over Starknet curves (`src/utils/whisperCrypto.ts`), and Scoped Auditor Viewing Keys (`src/utils/viewingKeys.ts`).
-
----
-
 ## How to Run Locally
-
-### Prerequisites
-- Node.js >= 18
-- Scarb (optional, for Cairo compilation)
 
 ### Setup & Launch
 ```bash

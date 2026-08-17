@@ -165,4 +165,22 @@ describe("StarkWhisper Crypto & Privacy Suite", () => {
     expect(batch.stealth.stealthAddress.startsWith("0x")).toBe(true);
     expect(batch.actions.length).toBe(3);
   });
+
+  test("calculateCounterfactualStealthAccount derives deterministic AA address", () => {
+    const cf = StarkWhisperSDK.prototype.createCounterfactualDeFiAccount?.call(
+      { helperAddress: "0x123" } as any,
+      "0xsecret123",
+      { protocol: "Ekubo", action: "SWAP", targetToken: "0xusdc", amount: "100", minOutputAmount: "99" }
+    );
+    expect(cf.counterfactualAddress.startsWith("0x")).toBe(true);
+    expect(cf.actions.length).toBe(2);
+  });
+
+  test("createGarbledBloomFilter performs fast PIR matching", () => {
+    const filter = StarkWhisperSDK.prototype ? undefined : null;
+    const { createGarbledBloomFilter, checkBloomFilterMatch } = require("./wakuRelay");
+    const bloom = createGarbledBloomFilter(["0x123", "0x456"]);
+    expect(checkBloomFilterMatch(bloom, "0x123")).toBe(true);
+    expect(checkBloomFilterMatch(bloom, "0x999")).toBe(false);
+  });
 });

@@ -2,7 +2,8 @@
  * @starkwhisper/sdk - Official Starknet STRK20 Zero-Knowledge Messaging & Payment Memos SDK
  * 
  * Embed metadata-resistant whispers, STARK Dual-Key stealth payments, 1-byte ViewTag scanners,
- * and compliance viewing keys into any Starknet dApp in under 10 lines of code.
+ * Ephemeral Counterfactual AA execution, k-of-n Threshold Decryption, and Waku P2P transport
+ * into any Starknet dApp in under 10 lines of code.
  */
 
 import { num } from "starknet";
@@ -23,6 +24,10 @@ import {
 import { exportScopedThreadViewingKey, ScopedViewingKey } from "../utils/viewingKeys";
 import { messagingHelperForIndex, addrSTRK } from "../utils/constants";
 import { scanOnChainMessagesForUser, OnChainMessageEvent } from "../utils/trialDecryption";
+import { calculateCounterfactualStealthAccount, CounterfactualAaAccount, DefiExecutionIntent } from "../utils/counterfactualAa";
+import { createThresholdMasterKey, encryptThresholdWhisper, combineThresholdSharesAndDecrypt, ThresholdEncryptedPayload } from "../utils/thresholdDecryption";
+import { createShieldedStreamConfig, calculateShieldedStreamVesting, ShieldedStreamConfig } from "../utils/shieldedStream";
+import { createGarbledBloomFilter, checkBloomFilterMatch, publishWakuP2PWhisper, WakuMessagePayload } from "../utils/wakuRelay";
 
 export interface CreateEncryptedWhisperOptions {
   recipientMeta: {
@@ -34,7 +39,7 @@ export interface CreateEncryptedWhisperOptions {
 }
 
 export interface ScanWhispersOptions {
-  viewingKey: string; // Recipient View Private Key or Scoped Viewing Key
+  viewingKey: string;
   events: OnChainMessageEvent[];
 }
 
@@ -56,16 +61,10 @@ export class StarkWhisperSDK {
     this.helperAddress = messagingHelperForIndex(networkIndex);
   }
 
-  /**
-   * Generates a Dual-Key Stealth Keypair (Spend Key + View Key) on the STARK Curve.
-   */
   public generateStealthMetaAddress(): DualKeyStealthKeyPair {
     return generateDualKeyKeyPair();
   }
 
-  /**
-   * Encrypts a whisper payload and constructs an atomic STRK20 Multicall Action Batch.
-   */
   public createEncryptedWhisper(options: CreateEncryptedWhisperOptions): {
     stealth: GeneratedStealthAddress;
     payload: EncryptedWhisperPayload;
@@ -117,16 +116,30 @@ export class StarkWhisperSDK {
     };
   }
 
-  /**
-   * Fast View-Tag Indexed Scanner that decrypts whispers using a Viewing Key (99.6% CPU reduction).
-   */
+  public createCounterfactualDeFiAccount(
+    sharedSecret: string,
+    defiIntent?: DefiExecutionIntent
+  ): CounterfactualAaAccount {
+    return calculateCounterfactualStealthAccount(sharedSecret, this.helperAddress, defiIntent);
+  }
+
+  public createThresholdKeyGroup(memberPublicKeys: string[], thresholdK: number = 3) {
+    return createThresholdMasterKey(memberPublicKeys, thresholdK);
+  }
+
+  public createShieldedVestingStream(
+    senderStealthPubKey: string,
+    recipientStealthAddress: string,
+    totalAmountStrk: string,
+    durationSeconds: number
+  ): ShieldedStreamConfig {
+    return createShieldedStreamConfig(senderStealthPubKey, recipientStealthAddress, totalAmountStrk, durationSeconds);
+  }
+
   public async scanWhispers(options: ScanWhispersOptions) {
     return scanOnChainMessagesForUser(options.viewingKey, options.events);
   }
 
-  /**
-   * Exports a thread-specific Scoped Auditor Viewing Key for compliance disclosure.
-   */
   public exportAuditorKey(
     channelId: string,
     userPrivateKey: string,
@@ -145,4 +158,13 @@ export {
   generateDualKeyStealthAddress,
   checkDualKeyStealthOwnership,
   exportScopedThreadViewingKey,
+  calculateCounterfactualStealthAccount,
+  createThresholdMasterKey,
+  encryptThresholdWhisper,
+  combineThresholdSharesAndDecrypt,
+  createShieldedStreamConfig,
+  calculateShieldedStreamVesting,
+  createGarbledBloomFilter,
+  checkBloomFilterMatch,
+  publishWakuP2PWhisper,
 };
