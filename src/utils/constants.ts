@@ -42,6 +42,12 @@ export function messagingHelperForIndex(index: number): string {
     return MessagingHelperSepolia;
 }
 
+export function rpcEndpointForIndex(index: number): string {
+    if (index === 0) return "https://starknet-mainnet.g.alchemy.com/starknet/version/rpc/v0_10/" + (process.env.NEXT_PUBLIC_PROVIDER_URL || "");
+    if (index === 2) return "https://starknet-sepolia.g.alchemy.com/starknet/version/rpc/v0_10/" + (process.env.NEXT_PUBLIC_PROVIDER_URL || "");
+    return "https://starknet-testnet.public.blastapi.io/rpc/v0_7";
+}
+
 // Resolve the echo helper for a frontend provider index (0 = Mainnet, 2 = Sepolia).
 // Returns "0x0" when no helper is deployed on that network.
 export function echoHelperForIndex(index: number): string {
@@ -53,4 +59,3 @@ export function echoHelperForIndex(index: number): string {
 // Frontend provider indices where the STRK20 privacy pool is available, mapped to a
 // display name. Used to gate the WalletAccountV6 STRK20 actions.
 export const Strk20Networks: Record<number, string> = { 0: "MAINNET", 2: "SEPOLIA" };
-

@@ -16,8 +16,8 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
 
   // Derived crypto values for live interactive demo
   const sampleRecipient = "0x01dc5a1c99182fa189382103e48810291ba81927a";
-  const channelId = deriveChannelId("0x04829fa7c3209118a8a91c1099238910aa189281b", sampleRecipient);
-  const encryptedPayload = encryptTextToFelts(demoMessage);
+  const encryptedPayload = encryptTextToFelts(demoMessage, sampleRecipient);
+  const channelId = encryptedPayload.channelId;
 
   // Feature Tab State
   const [activeTab, setActiveTab] = useState<"ecdh" | "memo" | "privacy">("ecdh");

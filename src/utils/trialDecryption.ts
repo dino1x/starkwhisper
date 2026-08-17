@@ -32,7 +32,7 @@ export async function scanOnChainMessagesForUser(
   const discoveredMessages: DecryptedWhisperMessage[] = [];
 
   // Compute all valid channel IDs for the user's known contacts
-  const targetChannelMap = new Map<string, string>(); // channelId -> contactAddress
+  const targetChannelMap = new Map<string, string>();
   knownContacts.forEach((contactAddr) => {
     const chId = deriveChannelId(userAddress, contactAddr);
     targetChannelMap.set(chId, contactAddr);
@@ -41,22 +41,30 @@ export async function scanOnChainMessagesForUser(
   events.forEach((evt, idx) => {
     const contactAddr = targetChannelMap.get(evt.channelId);
 
-    // If channel ID matches a contact channel, perform trial decryption
     if (contactAddr) {
-      // Derive shared ephemeral secret candidate using Poseidon(ephemeralPubkey, userAddress)
-      const ephemeralSecret = num.toBigInt(
+      // Ephemeral secret candidate
+      const ephemeralSecret = num.toHex(
         hash.computeHashOnElements([evt.ephemeralPubkey, num.toBigInt(userAddress).toString()])
       );
 
-      const text = decryptFeltsToText(evt.c0, evt.c1, evt.c2, evt.c3, ephemeralSecret);
+      const decryptedObj = decryptFeltsToText(
+        evt.c0,
+        evt.c1,
+        evt.c2,
+        evt.c3,
+        evt.ephemeralPubkey,
+        evt.nonce,
+        ephemeralSecret
+      );
 
-      const hasPayment = text.toLowerCase().includes("disbursed") || text.toLowerCase().includes("strk");
+      const decryptedText = decryptedObj.text;
+      const hasPayment = decryptedText.toLowerCase().includes("disbursed") || decryptedText.toLowerCase().includes("strk");
 
       discoveredMessages.push({
         id: `scanned-${evt.transactionHash.slice(0, 10)}-${idx}`,
         channelId: evt.channelId,
         sender: contactAddr,
-        text: text !== "[Decryption Failed]" ? text : "Encrypted Whisper Payload",
+        text: decryptedText !== "[Decryption Failed]" ? decryptedText : "Encrypted Whisper Payload",
         timestamp: evt.timestamp,
         hasPayment,
         paymentAmount: hasPayment ? "50 STRK" : undefined,

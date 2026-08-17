@@ -36,7 +36,8 @@ export function encryptTimelockMessage(
     );
   }
 
-  const encrypted = encryptTextToMultiFelts(text, currentKey);
+  const hexKey = num.toHex(currentKey);
+  const encrypted = encryptTextToMultiFelts(text, hexKey);
 
   return {
     unlockTimestamp,
@@ -78,11 +79,17 @@ export function decryptTimelockMessage(
       );
     }
 
-    const decryptedText = decryptMultiFeltsToText(payload.felts, currentKey);
+    const hexKey = num.toHex(currentKey);
+    const decryptedObj = decryptMultiFeltsToText(
+      payload.felts,
+      payload.ephemeralPubkey,
+      payload.nonce,
+      hexKey
+    );
 
     return {
-      success: true,
-      text: decryptedText,
+      success: decryptedObj.isAuthenticated,
+      text: decryptedObj.text,
     };
   } catch {
     return {

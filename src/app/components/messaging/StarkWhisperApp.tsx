@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { num } from "starknet";
+import { num, hash } from "starknet";
 import type { WALLET_API } from "@starknet-io/types-js";
 import { useStoreWallet } from "../Wallet/walletContext";
 import { useFrontendProvider } from "../client/provider/providerContext";
