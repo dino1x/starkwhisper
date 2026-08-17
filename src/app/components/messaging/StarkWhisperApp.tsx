@@ -253,10 +253,9 @@ export default function StarkWhisperApp() {
             channelId,
             encrypted.ephemeralPubkey,
             encrypted.nonce,
-            encrypted.c0,
-            encrypted.c1,
-            encrypted.c2,
-            encrypted.c3,
+            encrypted.nullifier,
+            num.toHex(encrypted.felts.length),
+            ...encrypted.felts,
           ],
         },
       ];

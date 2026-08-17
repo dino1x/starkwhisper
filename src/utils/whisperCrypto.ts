@@ -4,12 +4,13 @@ export interface EncryptedWhisperPayload {
   channelId: string;
   ephemeralPubkey: string;
   nonce: string;
+  nullifier: string;
   c0: string;
   c1: string;
   c2: string;
   c3: string;
   mac: string;
-  extraFelts?: string[];
+  felts: string[];
 }
 
 export interface DecryptedWhisperMessage {
@@ -27,10 +28,6 @@ function bytesToHex(bytes: Uint8Array): string {
   return "0x" + Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/**
- * Derives an un-linkable channel ID from an ECDH shared secret and nonce.
- * Observers cannot link this channel ID to either party's public address.
- */
 export function deriveChannelId(sharedSecret: string, nonce: string): string {
   return hash.computeHashOnElements([
     num.toBigInt(sharedSecret).toString(),
@@ -38,10 +35,13 @@ export function deriveChannelId(sharedSecret: string, nonce: string): string {
   ]);
 }
 
-/**
- * Real Cryptographic ECDH Shared Secret Derivation.
- * Computes S = ECDH(ephemeralPrivateKey, recipientPublicKey) using Starknet elliptic curve scalar multiplication.
- */
+export function deriveNullifier(ephemeralPubkey: string, nonce: string): string {
+  return hash.computeHashOnElements([
+    num.toBigInt(ephemeralPubkey).toString(),
+    num.toBigInt(nonce).toString(),
+  ]);
+}
+
 export function deriveEcdhSharedSecret(
   ephemeralPrivateKey: string | bigint,
   recipientPublicKey: string | bigint
@@ -58,7 +58,6 @@ export function deriveEcdhSharedSecret(
     const sharedPoint = ec.starkCurve.getSharedSecret(priv, pub);
     return bytesToHex(sharedPoint);
   } catch {
-    // Deterministic fallback derivation for test accounts or uncompressed keys
     return hash.computeHashOnElements([
       num.toBigInt(ephemeralPrivateKey).toString(),
       num.toBigInt(recipientPublicKey).toString(),
@@ -66,10 +65,6 @@ export function deriveEcdhSharedSecret(
   }
 }
 
-/**
- * Encrypts UTF-8 text into an arbitrary-length array of Cairo felts (c0..cN).
- * Allows sending documents or long notes of unbounded size.
- */
 export function encryptTextToMultiFelts(
   text: string,
   recipientPublicKey: string,
@@ -77,6 +72,7 @@ export function encryptTextToMultiFelts(
 ): {
   nonce: string;
   ephemeralPubkey: string;
+  nullifier: string;
   channelId: string;
   felts: string[];
   mac: string;
@@ -85,6 +81,7 @@ export function encryptTextToMultiFelts(
   const ephemeralPrivKey = ephemeralPrivKeyHex || bytesToHex(privKeyBytes);
   const ephemeralPubkey = ec.starkCurve.getStarkKey(ephemeralPrivKey);
   const nonce = num.toHex(BigInt(Date.now()));
+  const nullifier = deriveNullifier(ephemeralPubkey, nonce);
 
   const sharedSecret = deriveEcdhSharedSecret(ephemeralPrivKey, recipientPublicKey);
   const channelId = deriveChannelId(sharedSecret, nonce);
@@ -115,15 +112,13 @@ export function encryptTextToMultiFelts(
   return {
     nonce,
     ephemeralPubkey,
+    nullifier,
     channelId,
     felts,
     mac,
   };
 }
 
-/**
- * Decrypts an arbitrary-length array of Cairo felts back into a UTF-8 string.
- */
 export function decryptMultiFeltsToText(
   felts: string[],
   ephemeralPubkey: string,
@@ -170,10 +165,6 @@ export function decryptMultiFeltsToText(
   }
 }
 
-/**
- * Encrypts text using real Starknet ECDH key agreement & authenticated stream cipher.
- * Generates a 256-bit CSPRNG ephemeral private key and computes a Poseidon MAC tag.
- */
 export function encryptTextToFelts(
   text: string,
   recipientPublicKey: string,
@@ -185,17 +176,16 @@ export function encryptTextToFelts(
     channelId: res.channelId,
     ephemeralPubkey: res.ephemeralPubkey,
     nonce: res.nonce,
+    nullifier: res.nullifier,
     c0: f[0] || "0x0",
     c1: f[1] || "0x0",
     c2: f[2] || "0x0",
     c3: f[3] || "0x0",
     mac: res.mac,
+    felts: res.felts,
   };
 }
 
-/**
- * Decrypts 4 Starknet felts back into a UTF-8 string.
- */
 export function decryptFeltsToText(
   c0: string,
   c1: string,

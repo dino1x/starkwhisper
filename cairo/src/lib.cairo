@@ -25,13 +25,12 @@ pub trait IMessagingAnonymizer<TState> {
         channel_id: felt252,
         ephemeral_pubkey: felt252,
         nonce: felt252,
-        c0: felt252,
-        c1: felt252,
-        c2: felt252,
-        c3: felt252,
+        nullifier: felt252,
+        payload: Span<felt252>,
     ) -> Span<OpenNoteDeposit>;
     fn get_channel_message_count(self: @TState, channel_id: felt252) -> u64;
     fn get_total_messages(self: @TState) -> u64;
+    fn is_nullifier_spent(self: @TState, nullifier: felt252) -> bool;
 }
 
 #[starknet::contract]
@@ -44,12 +43,14 @@ mod MessagingAnonymizer {
         pub const BAD_POOL: felt252 = 'BAD_POOL';
         pub const NO_INPUT: felt252 = 'NO_INPUT';
         pub const AMOUNT_OVERFLOW: felt252 = 'AMOUNT_OVERFLOW';
+        pub const NULLIFIER_SPENT: felt252 = 'NULLIFIER_SPENT';
     }
 
     #[storage]
     struct Storage {
         total_messages: u64,
         channel_message_counts: Map<felt252, u64>,
+        spent_nullifiers: Map<felt252, bool>,
     }
 
     #[event]
@@ -64,10 +65,8 @@ mod MessagingAnonymizer {
         channel_id: felt252,
         ephemeral_pubkey: felt252,
         nonce: felt252,
-        c0: felt252,
-        c1: felt252,
-        c2: felt252,
-        c3: felt252,
+        nullifier: felt252,
+        payload: Span<felt252>,
         timestamp: u64,
         sender_pool: ContractAddress,
     }
@@ -82,13 +81,16 @@ mod MessagingAnonymizer {
             channel_id: felt252,
             ephemeral_pubkey: felt252,
             nonce: felt252,
-            c0: felt252,
-            c1: felt252,
-            c2: felt252,
-            c3: felt252,
+            nullifier: felt252,
+            payload: Span<felt252>,
         ) -> Span<OpenNoteDeposit> {
             let caller = get_caller_address();
             assert(pool_address == caller, errors::BAD_POOL);
+
+            // Replay Protection: ensure nullifier has not been spent
+            let is_spent = self.spent_nullifiers.entry(nullifier).read();
+            assert(!is_spent, errors::NULLIFIER_SPENT);
+            self.spent_nullifiers.entry(nullifier).write(true);
 
             let erc20 = IErc20Dispatcher { contract_address: token };
             let balance: u256 = erc20.balance_of(get_contract_address());
@@ -109,10 +111,8 @@ mod MessagingAnonymizer {
                 channel_id,
                 ephemeral_pubkey,
                 nonce,
-                c0,
-                c1,
-                c2,
-                c3,
+                nullifier,
+                payload,
                 timestamp,
                 sender_pool: pool_address,
             });
@@ -126,6 +126,10 @@ mod MessagingAnonymizer {
 
         fn get_total_messages(self: @ContractState) -> u64 {
             self.total_messages.read()
+        }
+
+        fn is_nullifier_spent(self: @ContractState, nullifier: felt252) -> bool {
+            self.spent_nullifiers.entry(nullifier).read()
         }
     }
 }
