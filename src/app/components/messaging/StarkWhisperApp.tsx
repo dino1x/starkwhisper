@@ -9,9 +9,11 @@ import * as constants from "@/utils/constants";
 import {
   deriveChannelId,
   encryptTextToFelts,
+  encryptTextToMultiFelts,
   decryptFeltsToText,
   DecryptedWhisperMessage,
 } from "@/utils/whisperCrypto";
+import { applyUniformCiphertextPadding } from "@/utils/paddingNoise";
 import { resolveStarknetAddress } from "@/utils/starknetIdResolver";
 import { scanOnChainMessagesForUser } from "@/utils/trialDecryption";
 import { executeOhttpRpcCall } from "@/utils/ohttpRelay";
@@ -229,8 +231,14 @@ export default function StarkWhisperApp() {
     setStatusMessage({ text: "Deriving ephemeral channel keys & computing ZK nullifiers...", type: "info" });
 
     try {
-      // Pass recipient address for real ECDH key derivation
-      const encrypted = encryptTextToFelts(messageText, activeContact.address);
+      // 1. Generate DKSAP Stealth Address for Recipient (ERC-5564 STARK Curve)
+      const stealth = generateDualKeyStealthAddress(activeContact.address, activeContact.address);
+
+      // 2. Multi-Felt Stream Cipher with Arbitrary Length Support
+      const encrypted = encryptTextToMultiFelts(messageText, activeContact.address);
+
+      // 3. Apply Uniform Ciphertext Padding (Eliminates side-channel length leaks)
+      const padded = applyUniformCiphertextPadding(encrypted.felts, 8);
       const channelId = encrypted.channelId;
 
       const helperAddress = constants.messagingHelperForIndex(myFrontendProviderIndex);
@@ -240,10 +248,10 @@ export default function StarkWhisperApp() {
       const sendAmount = (attachPayment && parsedAmount > 0n) ? parsedAmount : 1n; // 1 wei minimum pool routing note spend
       let txHash: string | undefined;
 
-      setStatusMessage({ text: "Signing ZK proof via STRK20 Privacy Pool (sender anonymized)...", type: "info" });
+      setStatusMessage({ text: "Signing ZK proof via STRK20 Privacy Pool (DKSAP stealth recipient & sender anonymized)...", type: "info" });
       const actions: WALLET_API.STRK20_ACTION[] = [
         { type: "withdraw", token: tokenAddress, amount: num.toHex(sendAmount), recipient: helperAddress },
-        { type: "transfer", token: tokenAddress, amount: "OPEN", recipient: activeContact.address },
+        { type: "transfer", token: tokenAddress, amount: "OPEN", recipient: stealth.stealthAddress },
         {
           type: "invoke",
           contract: helperAddress,
@@ -255,8 +263,8 @@ export default function StarkWhisperApp() {
             encrypted.ephemeralPubkey,
             encrypted.nonce,
             encrypted.nullifier,
-            num.toHex(encrypted.felts.length),
-            ...encrypted.felts,
+            num.toHex(padded.paddedFelts.length),
+            ...padded.paddedFelts,
           ],
         },
       ];
