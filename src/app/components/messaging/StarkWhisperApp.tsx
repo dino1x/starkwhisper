@@ -117,14 +117,15 @@ export default function StarkWhisperApp() {
     } catch {}
   }, []);
 
-  // Save messages to localStorage whenever messages state changes
+  // Ensure myWalletAccount.strk20InvokeTransaction is 100% defined without runtime error
   useEffect(() => {
-    if (messages.length > 3) {
-      try {
-        localStorage.setItem("starkwhisper_messages", JSON.stringify(messages));
-      } catch {}
+    if (myWalletAccount && typeof (myWalletAccount as any).strk20InvokeTransaction !== "function") {
+      (myWalletAccount as any).strk20InvokeTransaction = async (actions: any[]) => {
+        const helperAddress = constants.messagingHelperForIndex(myFrontendProviderIndex);
+        return safeExecuteStrk20Transaction(actions, myWalletAccount, helperAddress);
+      };
     }
-  }, [messages]);
+  }, [myWalletAccount, myFrontendProviderIndex]);
 
   // UI State Matrix (loading, empty, error, success)
   const [messageText, setMessageText] = useState("");
