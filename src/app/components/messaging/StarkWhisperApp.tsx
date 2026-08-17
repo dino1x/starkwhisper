@@ -199,7 +199,7 @@ export default function StarkWhisperApp() {
         timestamp: Date.now() - idx * 3600000,
       }));
 
-      const scanRes = await scanOnChainMessagesForUser(connectedAddress || "0x01", knownAddrs, parsedEvents);
+      const scanRes = await scanOnChainMessagesForUser(connectedAddress || "0x01", parsedEvents);
       showToast(`Trial Scanner scanned ${parsedEvents.length} logs via ${ohttpRes.maskedClientIp}!`);
       setStatusMessage({
         text: `Note Discovery Complete: Scanned ${parsedEvents.length} events via OHTTP proxy (${scanRes.matchedCount} matched). Latency: ${ohttpRes.latencyMs}ms`,
@@ -237,6 +237,7 @@ export default function StarkWhisperApp() {
       const parsedAmount = BigInt(Math.floor(parseFloat(paymentAmount || "0") * 1e18));
 
       const sendAmount = (attachPayment && parsedAmount > 0n) ? parsedAmount : 1n; // 1 wei minimum pool routing note spend
+      let txHash: string | undefined;
 
       setStatusMessage({ text: "Signing ZK proof via STRK20 Privacy Pool (sender anonymized)...", type: "info" });
       const actions: WALLET_API.STRK20_ACTION[] = [
