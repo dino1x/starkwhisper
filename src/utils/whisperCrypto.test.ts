@@ -7,6 +7,8 @@ import {
 } from "./whisperCrypto";
 import { resolveStarknetAddress } from "./starknetIdResolver";
 import { scanOnChainMessagesForUser } from "./trialDecryption";
+import { generateStealthAddress, checkStealthAddressOwnership } from "./stealthAddress";
+import { calculateBundledGasSavings } from "./gasOptimizer";
 
 describe("StarkWhisper Crypto & Privacy Suite", () => {
   const aliceAddr = "0x01dc5a1c99182fa189382103e48810291ba81927a";
@@ -82,5 +84,29 @@ describe("StarkWhisper Crypto & Privacy Suite", () => {
     const scanRes = await scanOnChainMessagesForUser(aliceAddr, [bobAddr], events);
     expect(scanRes.scannedCount).toBe(1);
     expect(scanRes.matchedCount).toBe(1);
+  });
+
+  test("DKSAP stealth address generation and ownership verification", () => {
+    const secret = 888777666n;
+    const stealth = generateStealthAddress(aliceAddr, bobAddr, secret);
+
+    expect(stealth.stealthAddress.startsWith("0x")).toBe(true);
+    expect(stealth.viewTag).toBeDefined();
+
+    const isMine = checkStealthAddressOwnership(
+      stealth.stealthAddress,
+      stealth.ephemeralPubKey,
+      stealth.viewTag,
+      aliceAddr,
+      secret
+    );
+
+    expect(isMine).toBe(true);
+  });
+
+  test("calculateBundledGasSavings calculates proof efficiency", () => {
+    const savings = calculateBundledGasSavings(3, true);
+    expect(savings.starkProofCount).toBe(1);
+    expect(savings.savingsPercentage).toBeGreaterThan(0);
   });
 });
