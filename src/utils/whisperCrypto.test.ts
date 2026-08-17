@@ -7,7 +7,7 @@ import {
 } from "./whisperCrypto";
 import { resolveStarknetAddress } from "./starknetIdResolver";
 import { scanOnChainMessagesForUser } from "./trialDecryption";
-import { generateStealthAddress, checkStealthAddressOwnership } from "./stealthAddress";
+import { generateDualKeyKeyPair, generateDualKeyStealthAddress, checkDualKeyStealthOwnership } from "./stealthAddress";
 import { calculateBundledGasSavings } from "./gasOptimizer";
 import { encryptTimelockMessage, decryptTimelockMessage } from "./timelockCrypto";
 import { applyUniformCiphertextPadding, stripUniformCiphertextPadding } from "./paddingNoise";
@@ -95,22 +95,26 @@ describe("StarkWhisper Crypto & Privacy Suite", () => {
     expect(scanRes.scannedCount).toBe(1);
   });
 
-  test("DKSAP stealth address generation and ownership verification", () => {
-    const secret = 888777666n;
-    const stealth = generateStealthAddress(aliceAddr, bobAddr, secret);
+  test("STARK Curve Dual-Key Stealth Address generation and 1-byte ViewTag scanner", () => {
+    const keys = generateDualKeyKeyPair();
+    const stealth = generateDualKeyStealthAddress(keys.spendPublicKey, keys.viewPublicKey);
 
     expect(stealth.stealthAddress.startsWith("0x")).toBe(true);
     expect(stealth.viewTag).toBeDefined();
 
-    const isMine = checkStealthAddressOwnership(
-      stealth.stealthAddress,
-      stealth.ephemeralPubKey,
-      stealth.viewTag,
-      aliceAddr,
-      secret
+    const scanResult = checkDualKeyStealthOwnership(
+      {
+        ephemeralPublicKey: stealth.ephemeralPublicKey,
+        stealthAddress: stealth.stealthAddress,
+        viewTag: stealth.viewTag,
+        channelId: "0x123",
+        timestamp: Date.now(),
+      },
+      keys.viewPrivateKey,
+      keys.spendPublicKey
     );
 
-    expect(isMine).toBe(true);
+    expect(scanResult.isMine).toBe(true);
   });
 
   test("calculateBundledGasSavings calculates proof efficiency", () => {

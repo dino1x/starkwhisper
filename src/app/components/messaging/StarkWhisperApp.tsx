@@ -16,6 +16,8 @@ import { resolveStarknetAddress } from "@/utils/starknetIdResolver";
 import { scanOnChainMessagesForUser } from "@/utils/trialDecryption";
 import { executeOhttpRpcCall } from "@/utils/ohttpRelay";
 import { exportScopedThreadViewingKey } from "@/utils/viewingKeys";
+import { generateDualKeyStealthAddress, generateDualKeyKeyPair } from "@/utils/stealthAddress";
+import { createGaslessWhisperIntent, submitGaslessWhisperIntent } from "@/utils/paymasterRelayer";
 import SelectWallet from "../client/WalletHandle/SelectWallet";
 import styles from "./StarkWhisperApp.module.css";
 
