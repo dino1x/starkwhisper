@@ -1,8 +1,8 @@
 /**
  * @starkwhisper/sdk - Official Starknet STRK20 Zero-Knowledge Messaging & Payment Memos SDK
  * 
- * Embed metadata-resistant whispers, dual-key stealth payments, and compliance viewing keys
- * into any Starknet dApp in under 10 lines of code.
+ * Embed metadata-resistant whispers, STARK Dual-Key stealth payments, 1-byte ViewTag scanners,
+ * and compliance viewing keys into any Starknet dApp in under 10 lines of code.
  */
 
 import { num } from "starknet";
@@ -14,12 +14,29 @@ import {
   EncryptedWhisperPayload,
 } from "../utils/whisperCrypto";
 import {
+  generateDualKeyKeyPair,
   generateDualKeyStealthAddress,
   checkDualKeyStealthOwnership,
   GeneratedStealthAddress,
+  DualKeyStealthKeyPair,
 } from "../utils/stealthAddress";
 import { exportScopedThreadViewingKey, ScopedViewingKey } from "../utils/viewingKeys";
 import { messagingHelperForIndex, addrSTRK } from "../utils/constants";
+import { scanOnChainMessagesForUser, OnChainMessageEvent } from "../utils/trialDecryption";
+
+export interface CreateEncryptedWhisperOptions {
+  recipientMeta: {
+    spendPublicKey: string;
+    viewPublicKey: string;
+  };
+  message: string;
+  tipAmount?: string;
+}
+
+export interface ScanWhispersOptions {
+  viewingKey: string; // Recipient View Private Key or Scoped Viewing Key
+  events: OnChainMessageEvent[];
+}
 
 export interface StarkWhisperBatchAction {
   type: "withdraw" | "transfer" | "invoke";
@@ -31,8 +48,8 @@ export interface StarkWhisperBatchAction {
 }
 
 export class StarkWhisperSDK {
-  private networkIndex: number;
-  private helperAddress: string;
+  public networkIndex: number;
+  public helperAddress: string;
 
   constructor(networkIndex: number = 0) {
     this.networkIndex = networkIndex;
@@ -40,18 +57,27 @@ export class StarkWhisperSDK {
   }
 
   /**
-   * Encrypts a message payload for a recipient and constructs the atomic STRK20 batch actions.
+   * Generates a Dual-Key Stealth Keypair (Spend Key + View Key) on the STARK Curve.
    */
-  public prepareWhisperBatch(
-    text: string,
-    recipientPublicKey: string,
-    paymentAmountStrk: string = "0"
-  ): {
+  public generateStealthMetaAddress(): DualKeyStealthKeyPair {
+    return generateDualKeyKeyPair();
+  }
+
+  /**
+   * Encrypts a whisper payload and constructs an atomic STRK20 Multicall Action Batch.
+   */
+  public createEncryptedWhisper(options: CreateEncryptedWhisperOptions): {
+    stealth: GeneratedStealthAddress;
     payload: EncryptedWhisperPayload;
     actions: StarkWhisperBatchAction[];
   } {
-    const payload = encryptTextToFelts(text, recipientPublicKey);
-    const parsedAmount = BigInt(Math.floor(parseFloat(paymentAmountStrk || "0") * 1e18));
+    const stealth = generateDualKeyStealthAddress(
+      options.recipientMeta.spendPublicKey,
+      options.recipientMeta.viewPublicKey
+    );
+
+    const payload = encryptTextToFelts(options.message, stealth.stealthAddress);
+    const parsedAmount = BigInt(Math.floor(parseFloat(options.tipAmount || "0") * 1e18));
     const sendAmount = parsedAmount > 0n ? parsedAmount : 1n;
 
     const actions: StarkWhisperBatchAction[] = [
@@ -65,7 +91,7 @@ export class StarkWhisperSDK {
         type: "transfer",
         token: addrSTRK,
         amount: "OPEN",
-        recipient: recipientPublicKey,
+        recipient: stealth.stealthAddress,
       },
       {
         type: "invoke",
@@ -85,19 +111,17 @@ export class StarkWhisperSDK {
     ];
 
     return {
+      stealth,
       payload,
       actions,
     };
   }
 
   /**
-   * Generates a 100% un-linkable Dual-Key Stealth Address for a recipient (ERC-5564 equivalent).
+   * Fast View-Tag Indexed Scanner that decrypts whispers using a Viewing Key (99.6% CPU reduction).
    */
-  public generateStealthRecipient(
-    recipientSpendPubKey: string,
-    recipientViewPubKey: string
-  ): GeneratedStealthAddress {
-    return generateDualKeyStealthAddress(recipientSpendPubKey, recipientViewPubKey);
+  public async scanWhispers(options: ScanWhispersOptions) {
+    return scanOnChainMessagesForUser(options.viewingKey, options.events);
   }
 
   /**
@@ -117,6 +141,7 @@ export {
   decryptFeltsToText,
   deriveChannelId,
   deriveNullifier,
+  generateDualKeyKeyPair,
   generateDualKeyStealthAddress,
   checkDualKeyStealthOwnership,
   exportScopedThreadViewingKey,

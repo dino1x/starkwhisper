@@ -12,6 +12,7 @@ import { calculateBundledGasSavings } from "./gasOptimizer";
 import { encryptTimelockMessage, decryptTimelockMessage } from "./timelockCrypto";
 import { applyUniformCiphertextPadding, stripUniformCiphertextPadding } from "./paddingNoise";
 import { auditAnonymizerContract } from "./proofAudit";
+import { StarkWhisperSDK } from "../sdk";
 
 describe("StarkWhisper Crypto & Privacy Suite", () => {
   const aliceAddr = "0x01dc5a1c99182fa189382103e48810291ba81927a";
@@ -150,5 +151,18 @@ describe("StarkWhisper Crypto & Privacy Suite", () => {
     const auditRes = await auditAnonymizerContract("0x04829fa7c3209118a8a91c1099238910aa189281b");
     expect(auditRes.supportsPrivacyInvoke).toBe(true);
     expect(auditRes.classHash.startsWith("0x")).toBe(true);
+  });
+
+  test("@starkwhisper/sdk exports 10-line integration API", () => {
+    const sdk = new StarkWhisperSDK(0);
+    const keys = sdk.generateStealthMetaAddress();
+    const batch = sdk.createEncryptedWhisper({
+      recipientMeta: { spendPublicKey: keys.spendPublicKey, viewPublicKey: keys.viewPublicKey },
+      message: "SDK Whisper Test",
+      tipAmount: "10",
+    });
+
+    expect(batch.stealth.stealthAddress.startsWith("0x")).toBe(true);
+    expect(batch.actions.length).toBe(3);
   });
 });

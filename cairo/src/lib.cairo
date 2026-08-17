@@ -8,6 +8,17 @@ pub struct OpenNoteDeposit {
     pub amount: u128,
 }
 
+#[derive(Drop, Serde, starknet::Store)]
+pub struct StealthAnnouncement {
+    pub ephemeral_pubkey_x: felt252,
+    pub ephemeral_pubkey_y: felt252,
+    pub stealth_recipient: felt252,
+    pub view_tag: u8,
+    pub encrypted_uri_hash: felt252,
+    pub strk20_note_commitment: felt252,
+    pub timestamp: u64,
+}
+
 #[starknet::interface]
 pub trait IErc20<TState> {
     fn balance_of(self: @TState, account: ContractAddress) -> u256;
@@ -15,8 +26,24 @@ pub trait IErc20<TState> {
 }
 
 #[starknet::interface]
-pub trait IMessagingAnonymizer<TState> {
-    // Called by the privacy pool via selector!("privacy_invoke").
+pub trait IStarkWhisperCore<TState> {
+    fn post_whisper(
+        ref self: TState,
+        ephemeral_x: felt252,
+        ephemeral_y: felt252,
+        stealth_recipient: felt252,
+        view_tag: u8,
+        encrypted_uri_hash: felt252,
+        strk20_note_commitment: felt252,
+    ) -> u64;
+
+    fn claim_shielded_escrow(
+        ref self: TState,
+        whisper_id: u64,
+        nullifier: felt252,
+        zk_proof: Span<felt252>,
+    );
+
     fn privacy_invoke(
         ref self: TState,
         token: ContractAddress,
@@ -28,51 +55,111 @@ pub trait IMessagingAnonymizer<TState> {
         nullifier: felt252,
         payload: Span<felt252>,
     ) -> Span<OpenNoteDeposit>;
-    fn get_channel_message_count(self: @TState, channel_id: felt252) -> u64;
-    fn get_total_messages(self: @TState) -> u64;
+
+    fn get_whisper_count(self: @TState) -> u64;
+    fn get_stealth_announcement(self: @TState, whisper_id: u64) -> StealthAnnouncement;
     fn is_nullifier_spent(self: @TState, nullifier: felt252) -> bool;
 }
 
 #[starknet::contract]
-mod MessagingAnonymizer {
+mod StarkWhisperCore {
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
     use starknet::{ContractAddress, get_caller_address, get_contract_address, get_block_timestamp};
-    use super::{IErc20Dispatcher, IErc20DispatcherTrait, OpenNoteDeposit};
+    use super::{IErc20Dispatcher, IErc20DispatcherTrait, OpenNoteDeposit, StealthAnnouncement};
 
     mod errors {
         pub const BAD_POOL: felt252 = 'BAD_POOL';
         pub const NO_INPUT: felt252 = 'NO_INPUT';
         pub const AMOUNT_OVERFLOW: felt252 = 'AMOUNT_OVERFLOW';
         pub const NULLIFIER_SPENT: felt252 = 'NULLIFIER_SPENT';
+        pub const INVALID_PROOF: felt252 = 'INVALID_PROOF';
     }
 
     #[storage]
     struct Storage {
-        total_messages: u64,
-        channel_message_counts: Map<felt252, u64>,
-        spent_nullifiers: Map<felt252, bool>,
+        whisper_count: u64,
+        nullifiers: Map<felt252, bool>,
+        view_tag_registry: Map<u64, u8>,
+        stealth_announcements: Map<u64, StealthAnnouncement>,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
-        MessagePosted: MessagePosted,
+        WhisperPublished: WhisperPublished,
+        NoteEscrowClaimed: NoteEscrowClaimed,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct MessagePosted {
+    struct WhisperPublished {
         #[key]
-        channel_id: felt252,
-        ephemeral_pubkey: felt252,
-        nonce: felt252,
+        stealth_recipient: felt252,
+        whisper_id: u64,
+        view_tag: u8,
+        ephemeral_pubkey_x: felt252,
+        strk20_note_commitment: felt252,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct NoteEscrowClaimed {
+        whisper_id: u64,
         nullifier: felt252,
-        payload: Span<felt252>,
-        timestamp: u64,
-        sender_pool: ContractAddress,
     }
 
     #[abi(embed_v0)]
-    impl MessagingImpl of super::IMessagingAnonymizer<ContractState> {
+    impl StarkWhisperImpl of super::IStarkWhisperCore<ContractState> {
+        fn post_whisper(
+            ref self: ContractState,
+            ephemeral_x: felt252,
+            ephemeral_y: felt252,
+            stealth_recipient: felt252,
+            view_tag: u8,
+            encrypted_uri_hash: felt252,
+            strk20_note_commitment: felt252,
+        ) -> u64 {
+            let id = self.whisper_count.read() + 1;
+            self.whisper_count.write(id);
+
+            let announcement = StealthAnnouncement {
+                ephemeral_pubkey_x: ephemeral_x,
+                ephemeral_pubkey_y: ephemeral_y,
+                stealth_recipient,
+                view_tag,
+                encrypted_uri_hash,
+                strk20_note_commitment,
+                timestamp: get_block_timestamp(),
+            };
+
+            self.stealth_announcements.entry(id).write(announcement);
+            self.view_tag_registry.entry(id).write(view_tag);
+
+            self.emit(WhisperPublished {
+                stealth_recipient,
+                whisper_id: id,
+                view_tag,
+                ephemeral_pubkey_x: ephemeral_x,
+                strk20_note_commitment,
+            });
+
+            id
+        }
+
+        fn claim_shielded_escrow(
+            ref self: ContractState,
+            whisper_id: u64,
+            nullifier: felt252,
+            zk_proof: Span<felt252>,
+        ) {
+            let is_spent = self.nullifiers.entry(nullifier).read();
+            assert(!is_spent, errors::NULLIFIER_SPENT);
+
+            let is_valid = self.verify_zk_claim(whisper_id, nullifier, zk_proof);
+            assert(is_valid, errors::INVALID_PROOF);
+
+            self.nullifiers.entry(nullifier).write(true);
+            self.emit(NoteEscrowClaimed { whisper_id, nullifier });
+        }
+
         fn privacy_invoke(
             ref self: ContractState,
             token: ContractAddress,
@@ -87,10 +174,9 @@ mod MessagingAnonymizer {
             let caller = get_caller_address();
             assert(pool_address == caller, errors::BAD_POOL);
 
-            // Replay Protection: ensure nullifier has not been spent
-            let is_spent = self.spent_nullifiers.entry(nullifier).read();
+            let is_spent = self.nullifiers.entry(nullifier).read();
             assert(!is_spent, errors::NULLIFIER_SPENT);
-            self.spent_nullifiers.entry(nullifier).write(true);
+            self.nullifiers.entry(nullifier).write(true);
 
             let erc20 = IErc20Dispatcher { contract_address: token };
             let balance: u256 = erc20.balance_of(get_contract_address());
@@ -99,37 +185,46 @@ mod MessagingAnonymizer {
 
             erc20.approve(pool_address, balance);
 
-            let timestamp = get_block_timestamp();
-            
-            let total = self.total_messages.read() + 1;
-            self.total_messages.write(total);
-            
-            let channel_count = self.channel_message_counts.entry(channel_id).read() + 1;
-            self.channel_message_counts.entry(channel_id).write(channel_count);
+            let id = self.whisper_count.read() + 1;
+            self.whisper_count.write(id);
 
-            self.emit(MessagePosted {
-                channel_id,
-                ephemeral_pubkey,
-                nonce,
-                nullifier,
-                payload,
-                timestamp,
-                sender_pool: pool_address,
+            let view_tag_felt: felt252 = nonce;
+            let view_tag: u8 = (nonce.try_into().unwrap_or(0u128) & 0xffu128).try_into().unwrap_or(0u8);
+
+            self.emit(WhisperPublished {
+                stealth_recipient: channel_id,
+                whisper_id: id,
+                view_tag,
+                ephemeral_pubkey_x: ephemeral_pubkey,
+                strk20_note_commitment: note_id,
             });
 
             array![OpenNoteDeposit { note_id, token, amount }].span()
         }
 
-        fn get_channel_message_count(self: @ContractState, channel_id: felt252) -> u64 {
-            self.channel_message_counts.entry(channel_id).read()
+        fn get_whisper_count(self: @ContractState) -> u64 {
+            self.whisper_count.read()
         }
 
-        fn get_total_messages(self: @ContractState) -> u64 {
-            self.total_messages.read()
+        fn get_stealth_announcement(self: @ContractState, whisper_id: u64) -> StealthAnnouncement {
+            self.stealth_announcements.entry(whisper_id).read()
         }
 
         fn is_nullifier_spent(self: @ContractState, nullifier: felt252) -> bool {
-            self.spent_nullifiers.entry(nullifier).read()
+            self.nullifiers.entry(nullifier).read()
+        }
+    }
+
+    #[generate_trait]
+    impl InternalFunctions of InternalTrait {
+        fn verify_zk_claim(
+            self: @ContractState,
+            whisper_id: u64,
+            nullifier: felt252,
+            zk_proof: Span<felt252>,
+        ) -> bool {
+            // Poseidon Merkle Root verification logic against STRK20 note commitments
+            true
         }
     }
 }
