@@ -175,7 +175,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
         {/* Problem Section (PAS Framework) */}
         <section className={styles.problemSection}>
           <div className={styles.sectionHeader}>
-            <span className={styles.sectionBadge}>// THE PRIVACY GAP ON PUBLIC LEADS</span>
+            <span className={styles.sectionBadge}>THE PRIVACY GAP ON PUBLIC LEADS</span>
             <h2 className={styles.sectionTitle}>Public Blockchains Expose Everything You Do</h2>
             <p className={styles.heroSub}>
               Standard dApps broadcast your addresses, balances, invoice details, and counterparties to every observer, bot, and competitor.
@@ -209,7 +209,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
         {/* Solution / Interactive Feature Tabs */}
         <section id="features" className={styles.featureSection}>
           <div className={styles.sectionHeader}>
-            <span className={styles.sectionBadge}>// HOW STARKWHISPER FIXES THIS</span>
+            <span className={styles.sectionBadge}>HOW STARKWHISPER FIXES THIS</span>
             <h2 className={styles.sectionTitle}>Zero-Knowledge Privacy Designed for Everyday Use</h2>
           </div>
 
@@ -250,7 +250,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
                 </div>
                 <div className={styles.featureGraphic}>
                   <div style={{ fontFamily: "JetBrains Mono", fontSize: 13, color: "#111827" }}>
-                    <div style={{ color: "#E63946", fontWeight: 700, marginBottom: 8 }}>// ECDH KEY DERIVATION</div>
+                    <div style={{ color: "#E63946", fontWeight: 700, marginBottom: 8 }}>ECDH KEY DERIVATION</div>
                     <div>S = sk_ephemeral × P_recipient</div>
                     <div>Key = KDF(S, channel_id)</div>
                     <div style={{ marginTop: 12, color: "#06D6A0" }}>✓ Ciphertext = Encrypt(Payload, Key)</div>
@@ -274,7 +274,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
                 </div>
                 <div className={styles.featureGraphic}>
                   <div style={{ fontFamily: "JetBrains Mono", fontSize: 13, color: "#111827" }}>
-                    <div style={{ color: "#E63946", fontWeight: 700, marginBottom: 8 }}>// ATOMIC PRIVACY_INVOKE</div>
+                    <div style={{ color: "#E63946", fontWeight: 700, marginBottom: 8 }}>ATOMIC PRIVACY_INVOKE</div>
                     <div>Action[0]: Withdraw(50 STRK) → Anonymizer</div>
                     <div>Action[1]: OpenNote(50 STRK) → Recipient</div>
                     <div>Action[2]: Invoke(MessagingAnonymizer, Memo)</div>
@@ -299,7 +299,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
                 </div>
                 <div className={styles.featureGraphic}>
                   <div style={{ fontFamily: "JetBrains Mono", fontSize: 13, color: "#111827" }}>
-                    <div style={{ color: "#E63946", fontWeight: 700, marginBottom: 8 }}>// METADATA MASKING</div>
+                    <div style={{ color: "#E63946", fontWeight: 700, marginBottom: 8 }}>METADATA MASKING</div>
                     <div>Sender: [ Shielded by Nullifier ]</div>
                     <div>Recipient: [ Concealed Lane ]</div>
                     <div>Payload: [ Encrypted Felts ]</div>
@@ -314,7 +314,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
         {/* FAQ Accordion Section */}
         <section id="faq" className={styles.faqSection}>
           <div className={styles.sectionHeader}>
-            <span className={styles.sectionBadge}>// FREQUENTLY ASKED QUESTIONS</span>
+            <span className={styles.sectionBadge}>FREQUENTLY ASKED QUESTIONS</span>
             <h2 className={styles.sectionTitle}>Everything You Need to Know</h2>
           </div>
 

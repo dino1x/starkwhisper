@@ -296,7 +296,7 @@ export default function StarkWhisperApp() {
         {/* Sidebar */}
         <aside className={styles.sidebar}>
           <div className={styles.sidebarSectionTitle}>
-            <span>// CONVERSATIONS</span>
+            <span>CONVERSATIONS</span>
           </div>
 
           <div className={styles.searchBox}>
