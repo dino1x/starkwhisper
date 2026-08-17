@@ -9,6 +9,9 @@ import { resolveStarknetAddress } from "./starknetIdResolver";
 import { scanOnChainMessagesForUser } from "./trialDecryption";
 import { generateStealthAddress, checkStealthAddressOwnership } from "./stealthAddress";
 import { calculateBundledGasSavings } from "./gasOptimizer";
+import { encryptTimelockMessage, decryptTimelockMessage } from "./timelockCrypto";
+import { applyUniformCiphertextPadding, stripUniformCiphertextPadding } from "./paddingNoise";
+import { auditAnonymizerContract } from "./proofAudit";
 
 describe("StarkWhisper Crypto & Privacy Suite", () => {
   const aliceAddr = "0x01dc5a1c99182fa189382103e48810291ba81927a";
@@ -108,5 +111,34 @@ describe("StarkWhisper Crypto & Privacy Suite", () => {
     const savings = calculateBundledGasSavings(3, true);
     expect(savings.starkProofCount).toBe(1);
     expect(savings.savingsPercentage).toBeGreaterThan(0);
+  });
+
+  test("ZK Timelock VDF encryption locks until threshold", () => {
+    const targetTime = Date.now() + 3600000;
+    const targetBlock = 1000;
+    const payload = encryptTimelockMessage("Locked Memo", targetTime, targetBlock, 50);
+
+    const lockedRes = decryptTimelockMessage(payload, Date.now(), 500);
+    expect(lockedRes.success).toBe(false);
+    expect(lockedRes.error).toContain("Timelock active");
+
+    const unlockedRes = decryptTimelockMessage(payload, targetTime + 100, targetBlock + 1);
+    expect(unlockedRes.success).toBe(true);
+    expect(unlockedRes.text).toEqual("Locked Memo");
+  });
+
+  test("applyUniformCiphertextPadding eliminates side-channel length leaks", () => {
+    const rawFelts = ["0x1", "0x2"];
+    const padded = applyUniformCiphertextPadding(rawFelts, 4);
+
+    expect(padded.paddedFelts.length).toBe(4);
+    const stripped = stripUniformCiphertextPadding(padded.paddedFelts, padded.originalLength);
+    expect(stripped).toEqual(rawFelts);
+  });
+
+  test("auditAnonymizerContract verifies pre-flight class hashes", async () => {
+    const auditRes = await auditAnonymizerContract("0x04829fa7c3209118a8a91c1099238910aa189281b");
+    expect(auditRes.supportsPrivacyInvoke).toBe(true);
+    expect(auditRes.classHash.startsWith("0x")).toBe(true);
   });
 });
