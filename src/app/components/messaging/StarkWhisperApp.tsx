@@ -14,6 +14,7 @@ import {
 } from "@/utils/whisperCrypto";
 import { resolveStarknetAddress } from "@/utils/starknetIdResolver";
 import { scanOnChainMessagesForUser } from "@/utils/trialDecryption";
+import { executeOhttpRpcCall } from "@/utils/ohttpRelay";
 import SelectWallet from "../client/WalletHandle/SelectWallet";
 import styles from "./StarkWhisperApp.module.css";
 
@@ -162,29 +163,49 @@ export default function StarkWhisperApp() {
 
   const handleRunTrialScanner = async () => {
     setIsScanning(true);
-    setStatusMessage({ text: "Scanning on-chain MessagePosted events with OHTTP relay...", type: "info" });
+    setStatusMessage({ text: "Scanning on-chain MessagePosted events via OHTTP relay...", type: "info" });
 
     try {
       const knownAddrs = contactsList.map((c) => c.address);
-      const mockEvents = [
-        {
-          transactionHash: "0x0192837129381928",
-          channelId: deriveChannelId(connectedAddress || "0x01", SEED_CONTACTS[0].address),
-          ephemeralPubkey: "0x0412893712",
-          nonce: "0x123",
-          c0: "0x0123", c1: "0x0456", c2: "0x0789", c3: "0x0abc",
-          timestamp: Date.now() - 600000,
-        },
-      ];
+      const helperAddress = constants.messagingHelperForIndex(myFrontendProviderIndex);
+      const rpcEndpoint = constants.rpcEndpointForIndex(myFrontendProviderIndex);
 
-      const scanRes = await scanOnChainMessagesForUser(connectedAddress || "0x01", knownAddrs, mockEvents);
-      showToast(`Trial Scanner matched ${scanRes.matchedCount} on-chain notes!`);
+      // Execute OHTTP privacy RPC query to fetch MessagePosted logs from contract
+      const ohttpRes = await executeOhttpRpcCall({
+        rpcEndpoint,
+        method: "starknet_getEvents",
+        params: [
+          {
+            from_block: { block_number: 0 },
+            to_block: "latest",
+            address: helperAddress,
+            keys: [[hash.starknetKeccak("MessagePosted")]],
+            chunk_size: 50,
+          },
+        ],
+      });
+
+      const rawEvents = Array.isArray(ohttpRes.result?.events) ? ohttpRes.result.events : [];
+      const parsedEvents = rawEvents.map((e: any, idx: number) => ({
+        transactionHash: e.transaction_hash || num.toHex(BigInt(idx + 1)),
+        channelId: e.keys?.[1] || "0x0",
+        ephemeralPubkey: e.data?.[0] || "0x0",
+        nonce: e.data?.[1] || "0x0",
+        c0: e.data?.[2] || "0x0",
+        c1: e.data?.[3] || "0x0",
+        c2: e.data?.[4] || "0x0",
+        c3: e.data?.[5] || "0x0",
+        timestamp: Date.now() - idx * 3600000,
+      }));
+
+      const scanRes = await scanOnChainMessagesForUser(connectedAddress || "0x01", knownAddrs, parsedEvents);
+      showToast(`Trial Scanner scanned ${parsedEvents.length} logs via ${ohttpRes.maskedClientIp}!`);
       setStatusMessage({
-        text: `Note Discovery Complete: Scanned ${scanRes.scannedCount} events via OHTTP relay (${scanRes.matchedCount} matched).`,
+        text: `Note Discovery Complete: Scanned ${parsedEvents.length} events via OHTTP proxy (${scanRes.matchedCount} matched). Latency: ${ohttpRes.latencyMs}ms`,
         type: "success",
       });
-    } catch {
-      setStatusMessage({ text: "Scanner encountered an error.", type: "error" });
+    } catch (err: any) {
+      setStatusMessage({ text: `Scanner error: ${err?.message || String(err)}`, type: "error" });
     } finally {
       setIsScanning(false);
     }
@@ -206,8 +227,9 @@ export default function StarkWhisperApp() {
     setStatusMessage({ text: "Deriving ephemeral channel keys & computing ZK nullifiers...", type: "info" });
 
     try {
-      const channelId = deriveChannelId(connectedAddress, activeContact.address);
-      const encrypted = encryptTextToFelts(messageText);
+      // Pass recipient address for real ECDH key derivation
+      const encrypted = encryptTextToFelts(messageText, activeContact.address);
+      const channelId = encrypted.channelId;
 
       const helperAddress = constants.messagingHelperForIndex(myFrontendProviderIndex);
       const tokenAddress = constants.addrSTRK;
@@ -219,7 +241,7 @@ export default function StarkWhisperApp() {
         setStatusMessage({ text: "Signing atomic private payment + encrypted memo ZK proof...", type: "info" });
         const actions: WALLET_API.STRK20_ACTION[] = [
           { type: "withdraw", token: tokenAddress, amount: num.toHex(parsedAmount), recipient: helperAddress },
-          { type: "transfer", token: tokenAddress, amount: "OPEN", recipient: connectedAddress },
+          { type: "transfer", token: tokenAddress, amount: "OPEN", recipient: activeContact.address },
           {
             type: "invoke",
             contract: helperAddress,
@@ -256,12 +278,8 @@ export default function StarkWhisperApp() {
             ],
           },
         ];
-        try {
-          const r = await myWalletAccount.strk20InvokeTransaction(actions);
-          txHash = r.transaction_hash;
-        } catch {
-          txHash = num.toHex(BigInt(Date.now()));
-        }
+        const r = await myWalletAccount.strk20InvokeTransaction(actions);
+        txHash = r.transaction_hash;
       }
 
       // Add message to local conversation state

@@ -26,11 +26,12 @@ describe("StarkWhisper Crypto & Privacy Suite", () => {
     expect(channel1.startsWith("0x")).toBe(true);
   });
 
-  test("encryptTextToFelts and decryptFeltsToText roundtrip", () => {
+  test("encryptTextToFelts and decryptFeltsToText roundtrip with real ECDH", () => {
     const secretMessage = "Private transfer 50 STRK for Q3 allocation";
-    const ephemeralSecret = 123456789012345n;
+    const recipientPrivateKey = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    const recipientPublicKey = "0x04829fa7c3209118a8a91c1099238910aa189281b";
 
-    const encrypted = encryptTextToFelts(secretMessage, ephemeralSecret);
+    const encrypted = encryptTextToFelts(secretMessage, recipientPublicKey);
 
     expect(encrypted.nonce).toBeDefined();
     expect(encrypted.ephemeralPubkey).toBeDefined();
@@ -41,10 +42,14 @@ describe("StarkWhisper Crypto & Privacy Suite", () => {
       encrypted.c1,
       encrypted.c2,
       encrypted.c3,
-      ephemeralSecret
+      encrypted.ephemeralPubkey,
+      encrypted.nonce,
+      recipientPrivateKey,
+      encrypted.mac
     );
 
-    expect(decrypted).toEqual(secretMessage);
+    expect(decrypted.isAuthenticated).toBe(true);
+    expect(decrypted.text).toEqual(secretMessage);
   });
 
   test("multi-felt stream cipher handles arbitrary length notes", () => {

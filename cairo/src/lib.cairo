@@ -159,8 +159,6 @@ mod MessagingAnonymizer {
         c3: felt252,
         timestamp: u64,
         sender: ContractAddress,
-        has_payment: bool,
-        payment_amount: u128,
     }
 
     #[abi(embed_v0)]
@@ -194,8 +192,6 @@ mod MessagingAnonymizer {
                 c3,
                 timestamp,
                 sender: caller,
-                has_payment: false,
-                payment_amount: 0,
             });
         }
 
@@ -240,8 +236,6 @@ mod MessagingAnonymizer {
                 c3,
                 timestamp,
                 sender: caller,
-                has_payment: true,
-                payment_amount: amount,
             });
 
             array![OpenNoteDeposit { note_id, token, amount }].span()
@@ -256,4 +250,3 @@ mod MessagingAnonymizer {
         }
     }
 }
-
