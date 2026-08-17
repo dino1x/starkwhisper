@@ -2,8 +2,8 @@
  * @starkwhisper/sdk - Official Starknet STRK20 Zero-Knowledge Messaging & Payment Memos SDK
  * 
  * Embed metadata-resistant whispers, STARK Dual-Key stealth payments, 1-byte ViewTag scanners,
- * Ephemeral Counterfactual AA execution, k-of-n Threshold Decryption, and Waku P2P transport
- * into any Starknet dApp in under 10 lines of code.
+ * Ephemeral Counterfactual AA execution, Double-Ratchet Forward Secrecy, ZK-PoI Proof of Innocence,
+ * and Waku P2P transport into any Starknet dApp in under 10 lines of code.
  */
 
 import { num } from "starknet";
@@ -28,6 +28,9 @@ import { calculateCounterfactualStealthAccount, CounterfactualAaAccount, DefiExe
 import { createThresholdMasterKey, encryptThresholdWhisper, combineThresholdSharesAndDecrypt, ThresholdEncryptedPayload } from "../utils/thresholdDecryption";
 import { createShieldedStreamConfig, calculateShieldedStreamVesting, ShieldedStreamConfig } from "../utils/shieldedStream";
 import { createGarbledBloomFilter, checkBloomFilterMatch, publishWakuP2PWhisper, WakuMessagePayload } from "../utils/wakuRelay";
+import { initDoubleRatchetState, ratchetStepAdvance, DoubleRatchetState } from "../utils/doubleRatchet";
+import { generateZkProofOfInnocence, verifyZkProofOfInnocence, ZkProofOfInnocence } from "../utils/proofOfInnocence";
+import { generateDecoyNoiseNote, shuffleBatchWithPoissonNoise } from "../utils/noiseDecoy";
 
 export interface CreateEncryptedWhisperOptions {
   recipientMeta: {
@@ -116,6 +119,14 @@ export class StarkWhisperSDK {
     };
   }
 
+  public initDoubleRatchet(sharedSecret: string): DoubleRatchetState {
+    return initDoubleRatchetState(sharedSecret);
+  }
+
+  public generateProofOfInnocence(noteCommitment: string, userAddress: string): ZkProofOfInnocence {
+    return generateZkProofOfInnocence(noteCommitment, userAddress);
+  }
+
   public createCounterfactualDeFiAccount(
     sharedSecret: string,
     defiIntent?: DefiExecutionIntent
@@ -123,17 +134,8 @@ export class StarkWhisperSDK {
     return calculateCounterfactualStealthAccount(sharedSecret, this.helperAddress, defiIntent);
   }
 
-  public createThresholdKeyGroup(memberPublicKeys: string[], thresholdK: number = 3) {
-    return createThresholdMasterKey(memberPublicKeys, thresholdK);
-  }
-
-  public createShieldedVestingStream(
-    senderStealthPubKey: string,
-    recipientStealthAddress: string,
-    totalAmountStrk: string,
-    durationSeconds: number
-  ): ShieldedStreamConfig {
-    return createShieldedStreamConfig(senderStealthPubKey, recipientStealthAddress, totalAmountStrk, durationSeconds);
+  public injectDecoyNoiseBatch(actions: StarkWhisperBatchAction[], decoyCount: number = 2): StarkWhisperBatchAction[] {
+    return shuffleBatchWithPoissonNoise(actions, decoyCount);
   }
 
   public async scanWhispers(options: ScanWhispersOptions) {
@@ -167,4 +169,10 @@ export {
   createGarbledBloomFilter,
   checkBloomFilterMatch,
   publishWakuP2PWhisper,
+  initDoubleRatchetState,
+  ratchetStepAdvance,
+  generateZkProofOfInnocence,
+  verifyZkProofOfInnocence,
+  generateDecoyNoiseNote,
+  shuffleBatchWithPoissonNoise,
 };

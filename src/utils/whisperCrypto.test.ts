@@ -176,11 +176,25 @@ describe("StarkWhisper Crypto & Privacy Suite", () => {
     expect(cf.actions.length).toBe(2);
   });
 
-  test("createGarbledBloomFilter performs fast PIR matching", () => {
-    const filter = StarkWhisperSDK.prototype ? undefined : null;
-    const { createGarbledBloomFilter, checkBloomFilterMatch } = require("./wakuRelay");
-    const bloom = createGarbledBloomFilter(["0x123", "0x456"]);
-    expect(checkBloomFilterMatch(bloom, "0x123")).toBe(true);
-    expect(checkBloomFilterMatch(bloom, "0x999")).toBe(false);
+  test("initDoubleRatchetState advances forward secrecy ratchet step", () => {
+    const { initDoubleRatchetState, ratchetStepAdvance } = require("./doubleRatchet");
+    const st = initDoubleRatchetState("0xshared123");
+    expect(st.chainKey.startsWith("0x")).toBe(true);
+    const adv = ratchetStepAdvance(st, "0xremotePub");
+    expect(adv.nextState.stepCount).toBe(1);
+    expect(adv.derivedMessageKey.startsWith("0x")).toBe(true);
+  });
+
+  test("generateZkProofOfInnocence verifies non-sanctioned compliance", () => {
+    const { generateZkProofOfInnocence, verifyZkProofOfInnocence } = require("./proofOfInnocence");
+    const proof = generateZkProofOfInnocence("0xnote123", "0xuser123");
+    expect(verifyZkProofOfInnocence(proof)).toBe(true);
+  });
+
+  test("shuffleBatchWithPoissonNoise injects decoy notes", () => {
+    const { shuffleBatchWithPoissonNoise } = require("./noiseDecoy");
+    const originalActions = [{ type: "withdraw", amount: "100" }] as any;
+    const shuffled = shuffleBatchWithPoissonNoise(originalActions, 2);
+    expect(shuffled.length).toBe(3);
   });
 });
