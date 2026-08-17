@@ -1,4 +1,4 @@
-# StarkWhisper 🤫🔒
+# StarkWhisper
 
 > **Metadata-Resistant, End-to-End Encrypted On-Chain Messaging & Private Payment Memos on Starknet**
 
@@ -8,7 +8,7 @@
 
 ---
 
-## 🎯 Inspiration
+## Inspiration
 
 Public blockchains preserve full transactional transparency by default. While this enables trustless auditability, it leaves users' private communications, invoice memos, payment negotiations, and tip submissions broadcast to the entire world.
 
@@ -16,17 +16,17 @@ Public blockchains preserve full transactional transparency by default. While th
 
 ---
 
-## 💡 What It Does
+## What It Does
 
-- 🔒 **End-to-End Encrypted Messaging:** Direct private messaging between any two Starknet privacy pool users.
-- 💸 **Private Payment Memos:** Attach a shielded STRK transfer to an encrypted message. The payment note spend and message posting occur atomically in one ZK proof.
-- 🕶️ **Metadata Resistance:** Nobody watching the chain can tell who sent the message, who received it, or what amount was transferred.
-- ⚡ **Starknet Wallet API Integration:** Zero client-side crypto setup for the user— Argent X handles keys and ZK proof generation seamlessly.
-- 🎨 **STRK20 Design System:** Built with native STRK20 brand guidelines (dark canvas `#0d0d0d`, hairline borders, GT America Mono typography).
+- **End-to-End Encrypted Messaging:** Direct private messaging between any two Starknet privacy pool users.
+- **Private Payment Memos:** Attach a shielded STRK transfer to an encrypted message. The payment note spend and message posting occur atomically in one ZK proof.
+- **Metadata Resistance:** Nobody watching the chain can tell who sent the message, who received it, or what amount was transferred.
+- **Starknet Wallet API Integration:** Zero client-side crypto setup for the user— Argent X handles keys and ZK proof generation seamlessly.
+- **STRK20 Design System:** Built with native STRK20 brand guidelines.
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 graph TD
@@ -55,7 +55,7 @@ graph TD
 
 ---
 
-## 🛠️ How We Built It
+## How We Built It
 
 - **Smart Contracts (Cairo 2024_07):** Custom `MessagingAnonymizer` helper contract (`cairo/src/lib.cairo`) implementing `IMessagingAnonymizer` and atomic `privacy_invoke_with_memo`.
 - **Frontend Stack:** Next.js (App Router), TypeScript, custom CSS custom properties (STRK20 brand design system).
@@ -64,7 +64,7 @@ graph TD
 
 ---
 
-## 🚀 How to Run Locally
+## How to Run Locally
 
 ### Prerequisites
 - Node.js >= 18
@@ -87,7 +87,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser with **Argen
 
 ---
 
-## 🏆 Accomplishments We're Proud Of
+## Accomplishments We're Proud Of
 
 - Successfully combined private STRK token transfers and encrypted message storage into a **single atomic zero-knowledge transaction**.
 - Built a zero-lag client-side felt encryption stream cipher that packs UTF-8 messages directly into Cairo felts.
@@ -95,12 +95,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser with **Argen
 
 ---
 
-## 🧑‍💻 Team
+## Team
 
 - **dino1x** (@marvelmarvinn on Telegram) — Full-stack & Cairo Engineer
 
 ---
 
-## 📜 License
+## License
 
 MIT License — free to use and build upon.
