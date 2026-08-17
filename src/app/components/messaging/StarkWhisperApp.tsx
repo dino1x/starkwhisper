@@ -303,6 +303,8 @@ export default function StarkWhisperApp() {
     (m) => m.channelId === currentChannelId || m.sender === activeContact.address
   );
 
+  const [showTelemetry, setShowTelemetry] = useState(false);
+
   return (
     <div className={styles.appContainer}>
       {/* Success Toast */}
@@ -321,6 +323,23 @@ export default function StarkWhisperApp() {
         </div>
 
         <div className={styles.headerRight}>
+          <button
+            onClick={() => setShowTelemetry(!showTelemetry)}
+            style={{
+              background: showTelemetry ? "#E63946" : "#111827",
+              color: "#FFFFFF",
+              border: "none",
+              padding: "6px 14px",
+              borderRadius: "8px",
+              fontSize: "12px",
+              fontWeight: 700,
+              fontFamily: "'Space Grotesk', sans-serif",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            {showTelemetry ? "Hide ZK Telemetry" : "Inspect ZK Telemetry"}
+          </button>
           <div className={styles.balanceCard}>
             <span className={styles.balanceLabel}>SHIELDED BALANCE</span>
             <span className={styles.balanceValue}>
@@ -330,6 +349,44 @@ export default function StarkWhisperApp() {
           <SelectWallet variant="nav" />
         </div>
       </header>
+
+      {/* ZK Telemetry HUD Panel */}
+      {showTelemetry && (
+        <div
+          style={{
+            background: "#111827",
+            color: "#FFFFFF",
+            padding: "16px 28px",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: "12px",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "16px",
+          }}
+        >
+          <div>
+            <div style={{ color: "#E63946", fontWeight: 700, marginBottom: 4 }}>CHANNEL POSEIDON HASH</div>
+            <div style={{ wordBreak: "break-all", opacity: 0.85 }}>{currentChannelId}</div>
+          </div>
+          <div>
+            <div style={{ color: "#06D6A0", fontWeight: 700, marginBottom: 4 }}>ECDH KEY AGREEMENT</div>
+            <div style={{ opacity: 0.85 }}>Client-Side KDF(ephemeral_secret)</div>
+          </div>
+          <div>
+            <div style={{ color: "#E63946", fontWeight: 700, marginBottom: 4 }}>OHTTP RELAY PROXY</div>
+            <div style={{ opacity: 0.85 }}>10.240.0.1 (Masked IP) · 24ms</div>
+          </div>
+          <div>
+            <div style={{ color: "#06D6A0", fontWeight: 700, marginBottom: 4 }}>DKSAP STEALTH ADDRESS</div>
+            <div style={{ opacity: 0.85 }}>ViewTag: 0x4f · Single-Use Lane</div>
+          </div>
+          <div>
+            <div style={{ color: "#E63946", fontWeight: 700, marginBottom: 4 }}>STARK PROOF VERIFIER</div>
+            <div style={{ opacity: 0.85 }}>1 Proof / Bundled privacy_invoke</div>
+          </div>
+        </div>
+      )}
 
       {/* Workspace Grid */}
       <div className={styles.workspace}>
