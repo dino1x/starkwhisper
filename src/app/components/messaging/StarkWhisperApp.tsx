@@ -72,7 +72,7 @@ export default function StarkWhisperApp() {
   const [newContactInput, setNewContactInput] = useState("");
   const [contactsList, setContactsList] = useState(SEED_CONTACTS);
 
-  // Message history per channel
+  // Message history per channel with localStorage persistence
   const [messages, setMessages] = useState<DecryptedWhisperMessage[]>([
     {
       id: "m-1",
@@ -103,6 +103,28 @@ export default function StarkWhisperApp() {
       isSelf: false,
     },
   ]);
+
+  // Load messages from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("starkwhisper_messages");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Save messages to localStorage whenever messages state changes
+  useEffect(() => {
+    if (messages.length > 3) {
+      try {
+        localStorage.setItem("starkwhisper_messages", JSON.stringify(messages));
+      } catch {}
+    }
+  }, [messages]);
 
   // UI State Matrix (loading, empty, error, success)
   const [messageText, setMessageText] = useState("");
