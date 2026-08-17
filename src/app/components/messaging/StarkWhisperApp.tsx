@@ -20,6 +20,7 @@ import { executeOhttpRpcCall } from "@/utils/ohttpRelay";
 import { exportScopedThreadViewingKey } from "@/utils/viewingKeys";
 import { generateDualKeyStealthAddress, generateDualKeyKeyPair } from "@/utils/stealthAddress";
 import { createGaslessWhisperIntent, submitGaslessWhisperIntent } from "@/utils/paymasterRelayer";
+import { safeExecuteStrk20Transaction } from "@/strk20-bridge/strk20Invoker";
 import SelectWallet from "../client/WalletHandle/SelectWallet";
 import styles from "./StarkWhisperApp.module.css";
 
@@ -268,7 +269,7 @@ export default function StarkWhisperApp() {
           ],
         },
       ];
-      const r = await myWalletAccount.strk20InvokeTransaction(actions);
+      const r = await safeExecuteStrk20Transaction(actions, myWalletAccount, helperAddress);
       txHash = r.transaction_hash;
 
       // Add message to local conversation state

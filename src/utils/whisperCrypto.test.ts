@@ -197,4 +197,14 @@ describe("StarkWhisper Crypto & Privacy Suite", () => {
     const shuffled = shuffleBatchWithPoissonNoise(originalActions, 2);
     expect(shuffled.length).toBe(3);
   });
+
+  test("Strk20WalletBridge performs placeholder substitution and safe execution", async () => {
+    const { Strk20WalletBridge, safeExecuteStrk20Transaction } = require("../strk20-bridge/strk20Invoker");
+    const bridge = new Strk20WalletBridge();
+    expect(bridge.substitutePlaceholder("${poolAddress}")).startsWith("0x");
+
+    const mockAccount = { execute: async (calls: any[]) => ({ transaction_hash: "0x1234567890abcdef" }) };
+    const res = await safeExecuteStrk20Transaction([{ type: "withdraw", amount: "100" }], mockAccount);
+    expect(res.transaction_hash).toBe("0x1234567890abcdef");
+  });
 });
