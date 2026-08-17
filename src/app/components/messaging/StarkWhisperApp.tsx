@@ -164,15 +164,14 @@ export default function StarkWhisperApp() {
 
   const handleRunTrialScanner = async () => {
     setIsScanning(true);
-    setStatusMessage({ text: "Scanning on-chain MessagePosted events via OHTTP relay...", type: "info" });
+    setStatusMessage({ text: "Scanning on-chain MessagePosted events via Starknet RPC...", type: "info" });
 
     try {
-      const knownAddrs = contactsList.map((c) => c.address);
       const helperAddress = constants.messagingHelperForIndex(myFrontendProviderIndex);
       const rpcEndpoint = constants.rpcEndpointForIndex(myFrontendProviderIndex);
 
-      // Execute OHTTP privacy RPC query to fetch MessagePosted logs from contract
-      const ohttpRes = await executeOhttpRpcCall({
+      // Execute RPC query to fetch MessagePosted logs from contract
+      const rpcRes = await executeOhttpRpcCall({
         rpcEndpoint,
         method: "starknet_getEvents",
         params: [
@@ -186,7 +185,7 @@ export default function StarkWhisperApp() {
         ],
       });
 
-      const rawEvents = Array.isArray(ohttpRes.result?.events) ? ohttpRes.result.events : [];
+      const rawEvents = Array.isArray(rpcRes.result?.events) ? rpcRes.result.events : [];
       const parsedEvents = rawEvents.map((e: any, idx: number) => ({
         transactionHash: e.transaction_hash || num.toHex(BigInt(idx + 1)),
         channelId: e.keys?.[1] || "0x0",
@@ -200,9 +199,9 @@ export default function StarkWhisperApp() {
       }));
 
       const scanRes = await scanOnChainMessagesForUser(connectedAddress || "0x01", parsedEvents);
-      showToast(`Trial Scanner scanned ${parsedEvents.length} logs via ${ohttpRes.maskedClientIp}!`);
+      showToast(`Trial Scanner scanned ${parsedEvents.length} logs in ${rpcRes.latencyMs}ms!`);
       setStatusMessage({
-        text: `Note Discovery Complete: Scanned ${parsedEvents.length} events via OHTTP proxy (${scanRes.matchedCount} matched). Latency: ${ohttpRes.latencyMs}ms`,
+        text: `Note Discovery Complete: Scanned ${parsedEvents.length} events (${scanRes.matchedCount} matched). Latency: ${rpcRes.latencyMs}ms`,
         type: "success",
       });
     } catch (err: any) {
@@ -366,20 +365,20 @@ export default function StarkWhisperApp() {
           }}
         >
           <div>
-            <div style={{ color: "#E63946", fontWeight: 700, marginBottom: 4 }}>STRK20 ANONYMITY SET</div>
-            <div style={{ opacity: 0.85, color: "#06D6A0", fontWeight: 700 }}>1,482 Active Depositors</div>
+            <div style={{ color: "#E63946", fontWeight: 700, marginBottom: 4 }}>STRK20 PRIVACY POOL</div>
+            <div style={{ opacity: 0.85, color: "#06D6A0", fontWeight: 700 }}>Shielded Note Commitments</div>
           </div>
           <div>
             <div style={{ color: "#06D6A0", fontWeight: 700, marginBottom: 4 }}>ECDH KEY AGREEMENT</div>
-            <div style={{ opacity: 0.85 }}>Client-Side KDF(ephemeral_secret)</div>
+            <div style={{ opacity: 0.85 }}>Starknet Curve Scalar Mult</div>
           </div>
           <div>
             <div style={{ color: "#E63946", fontWeight: 700, marginBottom: 4 }}>SENDER ANONYMITY</div>
-            <div style={{ opacity: 0.85 }}>100% Privacy Pool Routed</div>
+            <div style={{ opacity: 0.85 }}>100% Pool Contract Routed</div>
           </div>
           <div>
-            <div style={{ color: "#06D6A0", fontWeight: 700, marginBottom: 4 }}>OHTTP RELAY PROXY</div>
-            <div style={{ opacity: 0.85 }}>Masked RPC IP (24ms)</div>
+            <div style={{ color: "#06D6A0", fontWeight: 700, marginBottom: 4 }}>RPC NODE PROVIDER</div>
+            <div style={{ opacity: 0.85 }}>Direct Node Query (HTTPS)</div>
           </div>
           <div>
             <button
