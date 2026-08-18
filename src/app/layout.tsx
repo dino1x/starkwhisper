@@ -20,6 +20,9 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: 'Shielded STRK · WalletAccountV6',
   description: 'Shield, unshield and privately move STRK on Starknet with WalletAccountV6',
+  other: {
+    'ory-verify': 'orynth-e9131b706e154f0f974945146216bda8',
+  },
 }
 
 export default function RootLayout({
@@ -33,6 +36,9 @@ export default function RootLayout({
       className={`${inter.variable} ${spaceMono.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        <meta name="ory-verify" content="orynth-e9131b706e154f0f974945146216bda8" />
+      </head>
       <body>{children}</body>
     </html>
   )
