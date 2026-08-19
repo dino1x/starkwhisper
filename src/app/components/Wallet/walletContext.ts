@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { ProviderInterface, AccountInterface, type WalletAccountV6 } from "starknet";
 import { type WalletWithStarknetFeatures } from "@starknet-io/get-starknet-wallet-standard/features";
+import { safeExecuteStrk20Transaction } from "@/strk20-bridge/strk20Invoker";
 
 
 // import { StarknetWindowObject } from "@/app/core/StarknetWindowObject";
@@ -38,7 +39,15 @@ export const useStoreWallet = create<WalletState>()(set => ({
     chain: "",
     setChain: (chain: string) => { set(state => ({ chain: chain })) },
     myWalletAccount: undefined,
-    setMyWalletAccount: (myWAccount: WalletAccountV6) => { set(state => ({ myWalletAccount: myWAccount })) },
+    setMyWalletAccount: (myWAccount: WalletAccountV6) => {
+        if (myWAccount && typeof (myWAccount as any).strk20InvokeTransaction !== "function") {
+            (myWAccount as any).strk20InvokeTransaction = async (actions: any[]) => {
+                const helper = "0x78ae662e0cc6d1ab2cfeaf2a51ba8783d88e31886f88a794d142f95a6f8735b";
+                return safeExecuteStrk20Transaction(actions, myWAccount, helper);
+            };
+        }
+        set(state => ({ myWalletAccount: myWAccount }))
+    },
     account: undefined,
     setAccount: (account: AccountInterface) => { set(state => ({ account })) },
     provider: undefined,

@@ -9,6 +9,7 @@ import { useStoreWallet } from "../../Wallet/walletContext";
 import { useFrontendProvider } from "../provider/providerContext";
 import { StrkCoin } from "../../TokenIcons";
 import SelectWallet from "./SelectWallet";
+import { safeExecuteStrk20Transaction } from "@/strk20-bridge/strk20Invoker";
 
 // DEMO: all actions use one token (STRK). Swap constants.addrSTRK for your token,
 // or make the token a user selection.
@@ -202,7 +203,8 @@ export default function WalletAccountV6Tag() {
     }
     let txH: string;
     try {
-      const r = await myWalletAccount.strk20InvokeTransaction(actions);
+      const helper = constants.messagingHelperForIndex(myFrontendProviderIndex);
+      const r = await safeExecuteStrk20Transaction(actions, myWalletAccount, helper);
       txH = r.transaction_hash;
     } catch (error: any) {
       setResult(errorResult(error?.message ?? error?.toString?.() ?? String(error)));

@@ -6,12 +6,12 @@
   "starknetAddress": "0x01dc5a1c99182fa189382103e48810291ba81927a",
   "contracts": [
     {
-      "name": "MessagingAnonymizer",
+      "name": "StarkWhisperCore",
       "address": "0x78ae662e0cc6d1ab2cfeaf2a51ba8783d88e31886f88a794d142f95a6f8735b",
       "network": "sepolia"
     }
   ],
-  "demoVideo": "https://youtu.be/placeholder-starkwhisper-demo",
+  "demoVideo": "https://starkwhisper.vercel.app",
   "team": [
     {
       "github": "dino1x",
