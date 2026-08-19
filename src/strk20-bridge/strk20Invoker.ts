@@ -56,11 +56,14 @@ export class Strk20WalletBridge {
         const contract = this.substitutePlaceholder(act.contract || this.config.poolAddress);
         const rawCalldata = act.calldata || [];
         const substitutedCalldata = rawCalldata.map((c) => this.substitutePlaceholder(c));
+        const calldataToSend = substitutedCalldata.length >= 3
+          ? substitutedCalldata.slice(0, 3)
+          : substitutedCalldata;
 
         calls.push({
           contractAddress: contract,
           entrypoint: "privacy_invoke",
-          calldata: substitutedCalldata,
+          calldata: calldataToSend,
         });
       }
     });
