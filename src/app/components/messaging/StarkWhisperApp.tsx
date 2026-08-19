@@ -5,7 +5,7 @@ import { useStoreWallet } from "../Wallet/walletContext";
 import { useFrontendProvider } from "../client/provider/providerContext";
 import SelectWallet from "../client/WalletHandle/SelectWallet";
 import styles from "./StarkWhisperApp.module.css";
-import * as constants from "../../utils/constants";
+import * as constants from "../../../utils/constants";
 import { num, hash, RpcProvider } from "starknet";
 import { WALLET_API } from "@starknet-io/types-js";
 import {
@@ -14,18 +14,18 @@ import {
   deriveChannelId,
   fmtStrk,
   shortHex,
-} from "../../utils/whisperCrypto";
-import { generateDualKeyStealthAddress } from "../../utils/stealthAddress";
-import { applyUniformCiphertextPadding } from "../../utils/paddingNoise";
-import { scanOnChainMessagesForUser } from "../../utils/trialDecryption";
-import { executeOhttpRpcCall } from "../../utils/ohttpRelay";
-import { resolveStarknetAddress } from "../../utils/starknetIdResolver";
-import { safeExecuteStrk20Transaction } from "../../wallet-adapter/strk20Invoker";
+} from "../../../utils/whisperCrypto";
+import { generateDualKeyStealthAddress } from "../../../utils/stealthAddress";
+import { applyUniformCiphertextPadding } from "../../../utils/paddingNoise";
+import { scanOnChainMessagesForUser } from "../../../utils/trialDecryption";
+import { executeOhttpRpcCall } from "../../../utils/ohttpRelay";
+import { resolveStarknetAddress } from "../../../utils/starknetIdResolver";
+import { safeExecuteStrk20Transaction } from "../../../wallet-adapter/strk20Invoker";
 import {
   exportScopedThreadViewingKey,
   decryptWithScopedViewingKey,
   ScopedViewingKey,
-} from "../../utils/viewingKeys";
+} from "../../../utils/viewingKeys";
 
 export interface DecryptedWhisperMessage {
   id: string;
