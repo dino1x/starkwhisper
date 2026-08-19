@@ -7,7 +7,7 @@
   "contracts": [
     {
       "name": "StarkWhisperCore",
-      "address": "0x78ae662e0cc6d1ab2cfeaf2a51ba8783d88e31886f88a794d142f95a6f8735b",
+      "address": "0x0655ec63f0bb8e2a6c00cb6cc6d80f9f0860351e8ca9e9c248b110e51e113868",
       "network": "sepolia"
     }
   ],
