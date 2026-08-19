@@ -28,6 +28,16 @@ function bytesToHex(bytes: Uint8Array): string {
   return "0x" + Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+export function shortHex(h: string, head = 6, tail = 4): string {
+  if (!h || h.length <= head + tail) return h || "";
+  return `${h.slice(0, head)}...${h.slice(-tail)}`;
+}
+
+export function fmtStrk(wei: bigint | string | number): string {
+  const b = typeof wei === "bigint" ? wei : BigInt(wei || 0);
+  return (Number(b) / 1e18).toFixed(2);
+}
+
 export function deriveChannelId(sharedSecret: string, nonce: string): string {
   return hash.computeHashOnElements([
     num.toBigInt(sharedSecret).toString(),

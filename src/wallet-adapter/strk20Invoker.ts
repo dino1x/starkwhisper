@@ -1,7 +1,9 @@
 import { WalletAccountV6, Call, num } from "starknet";
 import type { WALLET_API } from "@starknet-io/types-js";
-import { safeExecuteStrk20Transaction } from "@/strk20-bridge/strk20Invoker";
-import * as constants from "@/utils/constants";
+import { safeExecuteStrk20Transaction } from "../strk20-bridge/strk20Invoker";
+import * as constants from "../utils/constants";
+
+export { safeExecuteStrk20Transaction };
 
 /**
  * Injects STRK20 method polyfills (`strk20InvokeTransaction`, `strk20Balances`)
