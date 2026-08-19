@@ -10,6 +10,7 @@ import { createStore, type Store } from "@starknet-io/get-starknet-discovery";
 import type {
   WalletWithStarknetFeatures,
 } from '@starknet-io/get-starknet-wallet-standard/features';
+import { injectStrk20Support } from "@/wallet-adapter/strk20Invoker";
 
 
 // Normalize wallet identifiers so starknetkit's connector id / SWO name
@@ -65,8 +66,9 @@ export default function SelectWallet({ variant = "ctaBig" }: { variant?: "nav" |
     setMyWallet(selectedWallet); // zustand
     console.log("Trying to connect wallet=", selectedWallet);
     const myWA = await WalletAccountV6.connect(myFrontendProviders[2], selectedWallet);
-    setMyWalletAccount(myWA);
-    console.log("WalletAccount created=", myWA);
+    const injectedWA = await injectStrk20Support(myWA);
+    setMyWalletAccount(injectedWA);
+    console.log("WalletAccount created with STRK20 support=", injectedWA);
     const result = await walletV6.requestAccounts(selectedWallet);
     if (typeof (result) == "string") {
       console.log("This Wallet is not compatible.");
