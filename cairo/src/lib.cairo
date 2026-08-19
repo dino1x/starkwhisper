@@ -172,23 +172,15 @@ mod StarkWhisperCore {
             payload: Span<felt252>,
         ) -> Span<OpenNoteDeposit> {
             let caller = get_caller_address();
-            assert(pool_address == caller, errors::BAD_POOL);
+            let is_pool = (caller == pool_address);
 
             let is_spent = self.nullifiers.entry(nullifier).read();
             assert(!is_spent, errors::NULLIFIER_SPENT);
             self.nullifiers.entry(nullifier).write(true);
 
-            let erc20 = IErc20Dispatcher { contract_address: token };
-            let balance: u256 = erc20.balance_of(get_contract_address());
-            let amount: u128 = balance.try_into().expect(errors::AMOUNT_OVERFLOW);
-            assert(amount != 0, errors::NO_INPUT);
-
-            erc20.approve(pool_address, balance);
-
             let id = self.whisper_count.read() + 1;
             self.whisper_count.write(id);
 
-            let view_tag_felt: felt252 = nonce;
             let view_tag: u8 = (nonce.try_into().unwrap_or(0u128) & 0xffu128).try_into().unwrap_or(0u8);
 
             self.emit(WhisperPublished {
@@ -199,7 +191,17 @@ mod StarkWhisperCore {
                 strk20_note_commitment: note_id,
             });
 
-            array![OpenNoteDeposit { note_id, token, amount }].span()
+            if is_pool {
+                let erc20 = IErc20Dispatcher { contract_address: token };
+                let balance: u256 = erc20.balance_of(get_contract_address());
+                let amount: u128 = balance.try_into().expect(errors::AMOUNT_OVERFLOW);
+                if amount != 0 {
+                    erc20.approve(pool_address, balance);
+                }
+                array![OpenNoteDeposit { note_id, token, amount }].span()
+            } else {
+                array![].span()
+            }
         }
 
         fn get_whisper_count(self: @ContractState) -> u64 {

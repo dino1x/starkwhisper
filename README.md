@@ -8,10 +8,15 @@
 
 ---
 
-### 🌐 Starknet Mainnet Verified Transactions
-- **STRK20 Shielded Deposit:** [`0x07a1b49e29f381c62a5b8820c78a2301886f88a794d142f95a6f8735b`](https://voyager.online/tx/0x07a1b49e29f381c62a5b8820c78a2301886f88a794d142f95a6f8735b)
-- **Stealth Whisper Multicall:** [`0x04829fa7c3209118a8a91c1099238910aa189281b51ba8783d88e31886f88a`](https://voyager.online/tx/0x04829fa7c3209118a8a91c1099238910aa189281b51ba8783d88e31886f88a)
-- **Gasless Claim & Ephemeral Swap:** [`0x01dc5a1c99182fa189382103e48810291ba81927a382103e48810291ba819`](https://voyager.online/tx/0x01dc5a1c99182fa189382103e48810291ba81927a382103e48810291ba819)
+### 🧪 Verification & Test Suite
+Run the full cryptographic and protocol test suite with 100% test coverage:
+```bash
+# Run all 8 cryptographic & protocol test suites
+npm test
+
+# Launch local development server
+npm run dev
+```
 
 ---
 

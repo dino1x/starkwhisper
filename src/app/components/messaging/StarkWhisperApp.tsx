@@ -198,7 +198,7 @@ export default function StarkWhisperApp() {
       const helperAddress = constants.messagingHelperForIndex(myFrontendProviderIndex);
       const rpcEndpoint = constants.rpcEndpointForIndex(myFrontendProviderIndex);
 
-      // Execute RPC query to fetch MessagePosted logs from contract
+      // Execute RPC query to fetch WhisperPublished and MessagePosted logs from contract
       const rpcRes = await executeOhttpRpcCall({
         rpcEndpoint,
         method: "starknet_getEvents",
@@ -207,24 +207,28 @@ export default function StarkWhisperApp() {
             from_block: { block_number: 0 },
             to_block: "latest",
             address: helperAddress,
-            keys: [[hash.starknetKeccak("MessagePosted")]],
+            keys: [[hash.starknetKeccak("WhisperPublished"), hash.starknetKeccak("MessagePosted")]],
             chunk_size: 50,
           },
         ],
       });
 
       const rawEvents = Array.isArray(rpcRes.result?.events) ? rpcRes.result.events : [];
-      const parsedEvents = rawEvents.map((e: any, idx: number) => ({
-        transactionHash: e.transaction_hash || num.toHex(BigInt(idx + 1)),
-        channelId: e.keys?.[1] || "0x0",
-        ephemeralPubkey: e.data?.[0] || "0x0",
-        nonce: e.data?.[1] || "0x0",
-        c0: e.data?.[2] || "0x0",
-        c1: e.data?.[3] || "0x0",
-        c2: e.data?.[4] || "0x0",
-        c3: e.data?.[5] || "0x0",
-        timestamp: Date.now() - idx * 3600000,
-      }));
+      const parsedEvents = rawEvents.map((e: any, idx: number) => {
+        const isWhisperPublished = e.keys?.[0] === hash.starknetKeccak("WhisperPublished");
+        return {
+          transactionHash: e.transaction_hash || num.toHex(BigInt(idx + 1)),
+          channelId: e.keys?.[1] || "0x0",
+          ephemeralPubkey: isWhisperPublished ? (e.data?.[2] || "0x0") : (e.data?.[0] || "0x0"),
+          nonce: isWhisperPublished ? (e.data?.[1] || "0x0") : (e.data?.[1] || "0x0"),
+          c0: e.data?.[2] || "0x0",
+          c1: e.data?.[3] || "0x0",
+          c2: e.data?.[4] || "0x0",
+          c3: e.data?.[5] || "0x0",
+          felts: e.data?.slice(2) || [],
+          timestamp: Date.now() - idx * 3600000,
+        };
+      });
 
       const scanRes = await scanOnChainMessagesForUser(connectedAddress || "0x01", parsedEvents);
       showToast(`Trial Scanner scanned ${parsedEvents.length} logs in ${rpcRes.latencyMs}ms!`);
