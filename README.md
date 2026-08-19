@@ -14,11 +14,18 @@
 
 ---
 
-### 🧪 Verification & Test Suite
-Run the full cryptographic and protocol test suite with 100% test coverage:
+### 🧪 Verification, Benchmark & Agent CLI Suite
+Run the full cryptographic test suite and performance profiler:
 ```bash
-# Run all 8 cryptographic & protocol test suites
+# Run all 8 cryptographic & protocol test suites (100% Green)
 npm test
+
+# Run high-precision cryptographic performance profiler
+npm run benchmark
+
+# Autonomous Agent & Developer CLI Engine
+node bin/cli.js generate-keys
+node bin/cli.js encrypt --to 0x01dc5a1c99182fa189382103e48810291ba81927a --msg "Confidential Invoice"
 
 # Launch local development server
 npm run dev

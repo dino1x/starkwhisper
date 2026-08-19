@@ -16,7 +16,7 @@ async function main() {
   const classHash = process.env.CLASS_HASH || DEFAULT_CLASS_HASH;
   const nodeUrl =
     process.env.STARKNET_NODE_URL ||
-    "https://starknet-sepolia.public.blastapi.io/rpc/v0_7";
+    "https://api.cartridge.gg/x/starknet/sepolia";
 
   console.log("================================================================");
   console.log("  StarkWhisper Smart Contract Deployment on Starknet Sepolia");
@@ -34,7 +34,11 @@ async function main() {
 
   console.log(`Connecting to Starknet Sepolia RPC: ${nodeUrl}`);
   const provider = new RpcProvider({ nodeUrl });
-  const account = new Account(provider, accountAddress, privateKey);
+  const account = new Account({
+    provider,
+    address: accountAddress,
+    signer: privateKey,
+  });
 
   console.log(`Deployer Account: ${accountAddress}`);
   console.log(`Target Class Hash: ${classHash}`);

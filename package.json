@@ -8,7 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "test": "node scripts/test_runner.js",
+    "benchmark": "node scripts/benchmark.js",
     "deploy:contract": "node scripts/deploy_messaging_contract.js"
+  },
+  "bin": {
+    "starkwhisper": "./bin/cli.js"
   },
   "dependencies": {
     "@starknet-io/get-starknet-discovery": "6.0.2",
