@@ -830,6 +830,157 @@
 }
 
 /* ==========================================================================
+   STRK20 Privacy Pool Modal Styles
+   ========================================================================== */
+.poolModalBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-btn);
+  color: var(--accent-primary);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font-family-mono);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.poolModalBtn:hover {
+  border-color: var(--accent-primary);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.poolModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.poolModalContent {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-elevated);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.poolModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.poolModalTitle {
+  font-family: var(--font-family-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.poolTabRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: var(--bg-canvas);
+  padding: 4px;
+  border-radius: var(--radius-btn);
+  border: 1px solid var(--border-subtle);
+}
+
+.poolTabBtn {
+  padding: 8px;
+  text-align: center;
+  font-family: var(--font-family-display);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  border-radius: var(--radius-btn);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.poolTabBtnActive {
+  background: var(--bg-surface-elevated);
+  color: var(--accent-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.poolFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.poolInputRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-btn);
+  padding: 8px 12px;
+}
+
+.poolInputRow:focus-within {
+  border-color: var(--border-focus);
+}
+
+.poolAmountInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-family: var(--font-family-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.poolSubmitBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: var(--accent-primary);
+  color: #09090B;
+  border-radius: var(--radius-btn);
+  font-family: var(--font-family-display);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+[data-theme="light"] .poolSubmitBtn {
+  color: #FFFFFF;
+}
+
+.poolSubmitBtn:hover {
+  background: var(--accent-primary-hover);
+}
+
+.poolSubmitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
    Responsive Adaptations
    ========================================================================== */
 @media (max-width: 1024px) {
