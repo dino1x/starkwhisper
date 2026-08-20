@@ -354,7 +354,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
           <p className={styles.bannerSub}>
             Experience metadata-resistant messaging and private payment memos on Starknet mainnet today.
           </p>
-          <button onClick={onLaunchDapp} className={styles.ctaPrimary} style={{ fontSize: 18, padding: "18px 40px" }}>
+          <button onClick={onLaunchDapp} className={`${styles.ctaPrimary} ${styles.bannerBtn}`}>
             Launch StarkWhisper dApp
           </button>
         </section>
