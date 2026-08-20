@@ -1,6 +1,7 @@
 {
-  "name": "wallet_account_for_starknet",
-  "version": "0.1.0",
+  "name": "starkwhisper",
+  "version": "1.0.0",
+  "description": "Metadata-Resistant Zero-Knowledge Messaging & Private Payment Memos on Starknet powered by the STRK20 Privacy Pool",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
@@ -9,6 +10,7 @@
     "lint": "next lint",
     "test": "node scripts/test_runner.js",
     "benchmark": "node scripts/benchmark.js",
+    "cli": "node bin/cli.js",
     "deploy:contract": "node scripts/deploy_messaging_contract.js"
   },
   "bin": {
