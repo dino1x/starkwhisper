@@ -26,7 +26,7 @@ function getRandomFelt() {
 function printHelp() {
   console.log(`
 ================================================================================
-  StarkWhisper CLI — Autonomous Agent & Developer Terminal Engine
+  StarkWhisper CLI - Autonomous Agent & Developer Terminal Engine
 ================================================================================
 
 Commands:
@@ -51,7 +51,7 @@ function generateKeys() {
   const pubSpend = ec.starkCurve.getStarkKey(privSpend);
   const pubView = ec.starkCurve.getStarkKey(privView);
 
-  console.log("\n🔑 Generated STARK Dual-Key Stealth Meta-Address:");
+  console.log("\n[STARK-KEYS] Generated STARK Dual-Key Stealth Meta-Address:");
   console.log("----------------------------------------------------------------");
   console.log(`  Private Spend Key:  ${privSpend}`);
   console.log(`  Public Spend Key:   ${pubSpend}`);
@@ -62,7 +62,7 @@ function generateKeys() {
 
 function encryptMessage(toAddr, msg) {
   if (!toAddr || !msg) {
-    console.error("❌ Error: Missing --to or --msg parameter");
+    console.error("Error: Missing --to or --msg parameter");
     return;
   }
   const ephemeralPriv = getRandomFelt();
@@ -85,7 +85,7 @@ function encryptMessage(toAddr, msg) {
     felts.push("0x0");
   }
 
-  console.log("\n🔒 Encrypted Whisper Payload (Multi-Felt Stream Cipher):");
+  console.log("\n[ENCRYPTED] Whisper Payload (Multi-Felt Stream Cipher):");
   console.log("----------------------------------------------------------------");
   console.log(`  Recipient Address:   ${toAddr}`);
   console.log(`  Ephemeral Public Key:${ephemeralPub}`);
@@ -116,12 +116,12 @@ function proveInnocence(commitment, address) {
     timestamp: Date.now(),
   };
 
-  console.log("\n🛡️ Generated Zero-Knowledge Proof of Innocence (ZK-PoI):");
+  console.log("\n[ZK-POI] Generated Zero-Knowledge Proof of Innocence:");
   console.log("----------------------------------------------------------------");
   console.log(`  Note Commitment:     ${proof.noteCommitment}`);
   console.log(`  Sanctions Tree Root: ${proof.sanctionsMerkleRoot}`);
   console.log(`  Exclusion Hash:      ${proof.exclusionProofHash}`);
-  console.log(`  Compliance Status:   ✓ COMPLIANT (Mathematically Excluded from Sanction Set)`);
+  console.log(`  Compliance Status:   COMPLIANT (Mathematically Excluded from Sanction Set)`);
   console.log("----------------------------------------------------------------\n");
   console.log(JSON.stringify(proof, null, 2));
 }
@@ -134,12 +134,12 @@ function advanceRatchet(channelId, remotePubKey) {
   const nextChainKey = hash.computeHashOnElements([chainKey, num.toBigInt(peer).toString(), "1"]);
   const messageKey = hash.computeHashOnElements([nextChainKey, "0x4d4553534147455f4b4559"]);
 
-  console.log("\n🔒 Double Ratchet Key Evolution (Forward Secrecy Step #1):");
+  console.log("\n[RATCHET] Double Ratchet Key Evolution (Forward Secrecy Step #1):");
   console.log("----------------------------------------------------------------");
   console.log(`  Channel ID:          ${chan}`);
   console.log(`  Evolved Chain Key:   ${nextChainKey}`);
   console.log(`  Derived Message Key: ${messageKey}`);
-  console.log(`  Forward Secrecy:     ✓ GUARANTEED (Past/Future Ratchet Keys Disconnected)`);
+  console.log(`  Forward Secrecy:     GUARANTEED (Past/Future Ratchet Keys Disconnected)`);
   console.log("----------------------------------------------------------------\n");
 }
 

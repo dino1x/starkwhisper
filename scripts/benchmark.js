@@ -19,7 +19,7 @@ function benchmark(name, iterations, fn) {
   const end = performance.now();
   const totalMs = end - start;
   const avgMs = totalMs / iterations;
-  const opsPerSec = Math.round((iterations / totalMs) * 1000);
+  const opsPerSec = Math.round((iterations / (totalMs || 0.001)) * 1000);
   return { name, iterations, totalMs, avgMs, opsPerSec };
 }
 
@@ -34,28 +34,28 @@ async function runBenchmarks() {
   const pubB = ec.starkCurve.getStarkKey(privB);
 
   // 1. STARK Curve Scalar Multiplication / ECDH Shared Secret
-  const ecdhBench = benchmark("STARK Curve Scalar Multiplication (ECDH)", 200, () => {
+  const ecdhBench = benchmark("STARK Curve Scalar Multiplication (ECDH)", 50, () => {
     const rawH = hash.computeHashOnElements([privA, pubB]);
     const scalar = BigInt(rawH) % FIELD_PRIME;
     return num.toHex(scalar);
   });
 
   // 2. Poseidon Hash Throughput
-  const hashBench = benchmark("Poseidon Keystream Hash Operations", 1000, (i) => {
+  const hashBench = benchmark("Poseidon Keystream Hash Operations", 100, (i) => {
     return hash.computeHashOnElements([privA, pubA, num.toHex(BigInt(i))]);
   });
 
   // 3. 1-Byte View-Tag Rejection Filter (<256 bounds check)
-  const viewTagBench = benchmark("1-Byte View-Tag Fast-Filter Check", 10000, (i) => {
+  const viewTagBench = benchmark("1-Byte View-Tag Fast-Filter Check", 5000, (i) => {
     const candidateTag = i % 256;
     const myTag = 42;
     return candidateTag === myTag;
   });
 
-  // 4. Multi-Felt Stream Cipher (8-Felt Block Encryption)
-  const cipherBench = benchmark("Multi-Felt Stream Cipher (8-Felt Block)", 500, (i) => {
+  // 4. Multi-Felt Stream Cipher (4-Felt Block Encryption)
+  const cipherBench = benchmark("Multi-Felt Stream Cipher (4-Felt Block)", 50, (i) => {
     const key = num.toHex(BigInt(i + 1));
-    const felts = ["0x1", "0x2", "0x3", "0x4", "0x5", "0x6", "0x7", "0x8"];
+    const felts = ["0x1", "0x2", "0x3", "0x4"];
     return felts.map((f, idx) => {
       const pad = hash.computeHashOnElements([key, num.toHex(BigInt(idx))]);
       return num.toHex((BigInt(f) ^ BigInt(pad)) % FIELD_PRIME);
@@ -78,15 +78,15 @@ async function runBenchmarks() {
 
   // Efficiency Comparison
   console.log("--------------------------------------------------------------------------------");
-  console.log("🚀 Note Discovery Efficiency Comparison:");
+  console.log("  Note Discovery Efficiency Comparison:");
   console.log("--------------------------------------------------------------------------------");
   const unoptimizedTimePer10kNotes = (10000 * ecdhBench.avgMs).toFixed(1);
   const viewTagTimePer10kNotes = (10000 * viewTagBench.avgMs + (10000 / 256) * ecdhBench.avgMs).toFixed(1);
   const speedupPercent = ((1 - viewTagTimePer10kNotes / unoptimizedTimePer10kNotes) * 100).toFixed(2);
 
-  console.log(`  • Unoptimized Trial Decryption (10,000 notes):   ${unoptimizedTimePer10kNotes} ms`);
-  console.log(`  • StarkWhisper 1-Byte ViewTag Scan (10,000 notes): ${viewTagTimePer10kNotes} ms`);
-  console.log(`  • Client CPU Overhead Reduction:                ${speedupPercent}% Faster\n`);
+  console.log(`  * Unoptimized Trial Decryption (10,000 notes):   ${unoptimizedTimePer10kNotes} ms`);
+  console.log(`  * StarkWhisper 1-Byte ViewTag Scan (10,000 notes): ${viewTagTimePer10kNotes} ms`);
+  console.log(`  * Client CPU Overhead Reduction:                ${speedupPercent}% Faster\n`);
   console.log("================================================================================\n");
 }
 
