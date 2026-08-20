@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useStoreWallet } from "../Wallet/walletContext";
 import { useFrontendProvider } from "../client/provider/providerContext";
 import SelectWallet from "../client/WalletHandle/SelectWallet";
@@ -56,24 +56,25 @@ export interface DecryptedWhisperMessage {
   noteCommitment?: string;
 }
 
-const SEED_CONTACTS = [
+export interface ContactItem {
+  address: string;
+  name: string;
+  avatar: string;
+  badge: string;
+}
+
+const DEFAULT_CONTACTS: ContactItem[] = [
   {
     address: "0x01dc5a1c99182fa189382103e48810291ba81927a",
-    name: "Alice",
+    name: "Alice (Core Dev)",
     avatar: "A",
-    badge: "Core Dev",
+    badge: "Direct",
   },
   {
     address: "0x04829fa7c3209118a8a91c1099238910aa189281b",
-    name: "Bob",
+    name: "Bob (Starknet Auditor)",
     avatar: "B",
     badge: "Auditor",
-  },
-  {
-    address: "0x07398129031cba77112048991209381920381029a",
-    name: "Charlie",
-    avatar: "C",
-    badge: "Pool LP",
   },
 ];
 
@@ -87,7 +88,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
   const myWalletAccount = useStoreWallet((state) => state.myWalletAccount);
   const myFrontendProviderIndex = useFrontendProvider((state) => state.currentFrontendProviderIndex);
 
-  // Theme State
+  // Theme State (Dark / Light)
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   useEffect(() => {
@@ -104,20 +105,58 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
   };
 
   // Contacts & Active Channel
-  const [activeContact, setActiveContact] = useState(SEED_CONTACTS[0]);
+  const [activeContact, setActiveContact] = useState<ContactItem>(DEFAULT_CONTACTS[0]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [contactsList, setContactsList] = useState(SEED_CONTACTS);
+  const [contactsList, setContactsList] = useState<ContactItem[]>(DEFAULT_CONTACTS);
   const [newContactInput, setNewContactInput] = useState("");
   const [showNewContactModal, setShowNewContactModal] = useState(false);
 
   // UI Drawer State
   const [showInspector, setShowInspector] = useState(true);
-  const [showAuditorModal, setShowAuditorModal] = useState(false);
 
-  // Shielded Balance & Anonymity Pool Depth
-  const [shieldedBalance, setShieldedBalance] = useState<string>("14,500 STRK");
-  const [anonymitySetSize, setAnonymitySetSize] = useState<number>(1428);
+  // Real Dynamic Shielded Balance
+  const [shieldedBalance, setShieldedBalance] = useState<string>("—");
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+
+  // Real Shielded Balance Query via STRK20 Wallet Account API
+  const fetchRealShieldedBalance = useCallback(async () => {
+    if (!isConnected || !myWalletAccount) {
+      setShieldedBalance("—");
+      return;
+    }
+    setIsLoadingBalance(true);
+    try {
+      if (typeof (myWalletAccount as any).strk20Balances === "function") {
+        const raw = await (myWalletAccount as any).strk20Balances([]);
+        const r = raw?.value ?? raw;
+        if (Array.isArray(r) && r.length > 0) {
+          const strkEntry = r.find((b: any) => {
+            const token = b?.token ?? b?.token_address ?? b?.[0];
+            try {
+              return num.toBigInt(token) === num.toBigInt(constants.addrSTRK);
+            } catch {
+              return false;
+            }
+          });
+          if (strkEntry) {
+            const amt = strkEntry?.amount ?? strkEntry?.balance ?? strkEntry?.[1];
+            setShieldedBalance(`${fmtStrk(num.toBigInt(amt))} STRK`);
+            return;
+          }
+        }
+      }
+      setShieldedBalance("0.00 STRK");
+    } catch {
+      setShieldedBalance("0.00 STRK");
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  }, [isConnected, myWalletAccount]);
+
+  useEffect(() => {
+    fetchRealShieldedBalance();
+  }, [fetchRealShieldedBalance]);
 
   // Toast Notification
   const [toastNotification, setToastNotification] = useState<string | null>(null);
@@ -126,41 +165,20 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
     setTimeout(() => setToastNotification(null), 3500);
   };
 
-  // Message History with persistence
-  const [messages, setMessages] = useState<DecryptedWhisperMessage[]>([
-    {
-      id: "m-1",
-      channelId: deriveChannelId(connectedAddress || "0x01", SEED_CONTACTS[0].address),
-      sender: SEED_CONTACTS[0].address,
-      text: "Hey! Let's handle the Q3 STRK allocation via private transfer.",
-      timestamp: Date.now() - 3600000 * 2,
-      hasPayment: false,
-      isSelf: false,
-      ratchetStep: 1,
-    },
-    {
-      id: "m-2",
-      channelId: deriveChannelId(connectedAddress || "0x01", SEED_CONTACTS[0].address),
-      sender: connectedAddress || "0x01",
-      text: "Sounds good. Send it with an encrypted memo attached.",
-      timestamp: Date.now() - 3600000,
-      hasPayment: false,
-      isSelf: true,
-      ratchetStep: 2,
-    },
-    {
-      id: "m-3",
-      channelId: deriveChannelId(connectedAddress || "0x01", SEED_CONTACTS[0].address),
-      sender: SEED_CONTACTS[0].address,
-      text: "Disbursed 50 STRK into your private note commitment.",
-      timestamp: Date.now() - 1800000,
-      hasPayment: true,
-      paymentAmount: "50.0 STRK",
-      isSelf: false,
-      ratchetStep: 3,
-      noteCommitment: "0x067a...b912",
-    },
-  ]);
+  // Message History loaded from localStorage
+  const [messages, setMessages] = useState<DecryptedWhisperMessage[]>([]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("starkwhisper_history");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setMessages(parsed);
+        }
+      }
+    } catch {}
+  }, []);
 
   // Composer State
   const [messageText, setMessageText] = useState("");
@@ -195,11 +213,6 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
   // ZK Proof of Innocence State
   const [poiProof, setPoiProof] = useState<ZkProofOfInnocence | null>(null);
   const [poiVerified, setPoiVerified] = useState<boolean | null>(null);
-
-  // Scoped Viewing Key State
-  const [exportedViewingKey, setExportedViewingKey] = useState<string>("");
-  const [importedKeyInput, setImportedKeyInput] = useState<string>("");
-  const [auditTab, setAuditTab] = useState<"export" | "inspect" | "poi">("export");
 
   // Filter Contacts
   const filteredContacts = useMemo(() => {
@@ -251,7 +264,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
       const updatedMsgs = [...messages, newMsg];
       setMessages(updatedMsgs);
       try {
-        localStorage.setItem("starkwhisper_messages", JSON.stringify(updatedMsgs));
+        localStorage.setItem("starkwhisper_history", JSON.stringify(updatedMsgs));
       } catch {}
 
       // Update Ratchet state
@@ -262,7 +275,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
 
       setMessageText("");
       if (attachPayment) setAttachPayment(false);
-      showToast(useGaslessRelayer ? "Whisper relayed gaslessly (0 STRK Gas)!" : "Note committed on-chain!");
+      showToast(useGaslessRelayer ? "Whisper relayed gaslessly (0 STRK Gas)" : "Note committed on-chain");
     } catch (err: any) {
       showToast("Transaction failed: " + (err?.message || "Unknown error"));
     } finally {
@@ -276,8 +289,8 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
     showToast("Scanning STRK20 pool with 1-byte view-tags...");
     setTimeout(() => {
       setIsScanning(false);
-      showToast("Notes synchronized (99.6% CPU savings via View-Tags)!");
-    }, 900);
+      showToast("Notes synchronized (99.6% CPU savings via View-Tags)");
+    }, 800);
   };
 
   // Add Contact
@@ -294,7 +307,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
       }
     }
 
-    const newContact = {
+    const newContact: ContactItem = {
       address: resolved,
       name: name,
       avatar: name[0].toUpperCase(),
@@ -305,14 +318,14 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
     setActiveContact(newContact);
     setNewContactInput("");
     setShowNewContactModal(false);
-    showToast(`Added encrypted lane with ${name}!`);
+    showToast(`Added encrypted lane with ${name}`);
   };
 
   // Export Scoped Viewing Key
   const handleExportKey = () => {
     const key = exportScopedThreadViewingKey(currentChannelId, connectedAddress, activeContact.address);
-    setExportedViewingKey(JSON.stringify(key, null, 2));
-    showToast("Scoped viewing key copied to clipboard!");
+    navigator.clipboard.writeText(JSON.stringify(key, null, 2));
+    showToast("Scoped viewing key copied to clipboard");
   };
 
   // Generate ZK-Proof of Innocence
@@ -323,7 +336,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
     );
     setPoiProof(proof);
     setPoiVerified(true);
-    showToast("ZK-Proof of Innocence generated & verified!");
+    showToast("ZK-Proof of Innocence generated and verified");
   };
 
   return (
@@ -331,7 +344,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
       {/* Toast Notification */}
       {toastNotification && (
         <div className={styles.toast}>
-          <span>✓</span>
+          <span>[Confirmed]</span>
           <span>{toastNotification}</span>
         </div>
       )}
@@ -341,8 +354,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
         <div className={styles.headerLeft}>
           {onBackToLanding && (
             <button onClick={onBackToLanding} className={styles.backBtn} title="Return to Landing Page">
-              <span>←</span>
-              <span>Landing</span>
+              <span>Back to Landing</span>
             </button>
           )}
 
@@ -353,14 +365,14 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
 
           <div className={styles.networkPill}>
             <span className={styles.networkDot}></span>
-            <span>Sepolia Testnet</span>
+            <span>Sepolia</span>
           </div>
         </div>
 
         <div className={styles.headerRight}>
           <div className={styles.balancePill}>
             <span>Shielded:</span>
-            <span className={styles.balanceAmount}>{shieldedBalance}</span>
+            <span className={styles.balanceAmount}>{isLoadingBalance ? "Loading..." : shieldedBalance}</span>
           </div>
 
           <button
@@ -368,8 +380,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
             className={`${styles.inspectorToggleBtn} ${showInspector ? styles.inspectorToggleActive : ""}`}
             title="Toggle Cryptographic Inspector Drawer"
           >
-            <span>🛡️</span>
-            <span>Security Inspector</span>
+            <span>Inspector</span>
           </button>
 
           <button
@@ -378,7 +389,9 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
             title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
             aria-label="Toggle Theme"
           >
-            {theme === "dark" ? "☀" : "☾"}
+            <span style={{ fontSize: "11px", fontWeight: 700 }}>
+              {theme === "dark" ? "LIGHT" : "DARK"}
+            </span>
           </button>
 
           <SelectWallet variant="nav" />
@@ -425,7 +438,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
                     <div className={styles.convoTopRow}>
                       <span className={styles.convoName}>{contact.name}</span>
                       <span className={styles.convoTime}>
-                        {lastMsg ? new Date(lastMsg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Active"}
+                        {lastMsg ? new Date(lastMsg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Ready"}
                       </span>
                     </div>
                     <div className={styles.convoPreview}>
@@ -439,7 +452,6 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
 
           <div className={styles.sidebarFooter}>
             <button onClick={handleSyncNotes} disabled={isScanning} className={styles.syncBtn}>
-              <span>⚡</span>
               <span>{isScanning ? "Scanning Notes..." : "Sync Shielded Notes"}</span>
             </button>
           </div>
@@ -458,46 +470,55 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
             </div>
 
             <div className={styles.chatSecurityPill}>
-              <span>🔒</span>
               <span>STARK Curve E2E Encrypted</span>
             </div>
           </div>
 
           {/* Messages Feed */}
           <div className={styles.messagesFeed}>
-            {activeMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`${styles.messageRow} ${msg.isSelf ? styles.messageRowSelf : styles.messageRowOther}`}
-              >
-                <div className={`${styles.bubble} ${msg.isSelf ? styles.bubbleSelf : styles.bubbleOther}`}>
-                  {/* Embedded STRK Payment Note */}
-                  {msg.hasPayment && (
-                    <div className={styles.paymentNoteCard}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ fontSize: "16px" }}>⚡</span>
-                        <div>
-                          <div className={styles.paymentNoteAmount}>+{msg.paymentAmount}</div>
-                          <div style={{ fontSize: "10px", color: "var(--text-tertiary)", fontFamily: "var(--font-family-mono)" }}>
-                            Private Disbursal Note
+            {activeMessages.length === 0 ? (
+              <div style={{ margin: "auto", textAlign: "center", maxWidth: "340px", color: "var(--text-tertiary)" }}>
+                <div style={{ fontFamily: "var(--font-family-display)", fontSize: "16px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "8px" }}>
+                  End-to-End Encrypted Lane
+                </div>
+                <p style={{ fontSize: "13px", lineHeight: 1.5 }}>
+                  Messages and STRK payment memos sent in this lane are encrypted with STARK Curve DH keys and evolved with Double Ratchet forward secrecy.
+                </p>
+              </div>
+            ) : (
+              activeMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`${styles.messageRow} ${msg.isSelf ? styles.messageRowSelf : styles.messageRowOther}`}
+                >
+                  <div className={`${styles.bubble} ${msg.isSelf ? styles.bubbleSelf : styles.bubbleOther}`}>
+                    {/* Embedded STRK Payment Note */}
+                    {msg.hasPayment && (
+                      <div className={styles.paymentNoteCard}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <div>
+                            <div className={styles.paymentNoteAmount}>+{msg.paymentAmount}</div>
+                            <div style={{ fontSize: "10px", color: "var(--text-tertiary)", fontFamily: "var(--font-family-mono)" }}>
+                              Private Disbursal Note
+                            </div>
                           </div>
                         </div>
+                        <span className={styles.paymentNoteBadge}>Claimed</span>
                       </div>
-                      <span className={styles.paymentNoteBadge}>Claimed</span>
+                    )}
+
+                    <div className={styles.bubbleText}>{msg.text}</div>
+
+                    <div className={styles.bubbleFooter}>
+                      <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                      <span style={{ color: "var(--accent-primary)" }}>
+                        Epoch #{msg.ratchetStep || 1}
+                      </span>
                     </div>
-                  )}
-
-                  <div className={styles.bubbleText}>{msg.text}</div>
-
-                  <div className={styles.bubbleFooter}>
-                    <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-                    <span style={{ color: "var(--accent-primary)" }}>
-                      ✓ Epoch #{msg.ratchetStep || 1}
-                    </span>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* Streamlined Composer */}
@@ -508,7 +529,6 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
                   onClick={() => setUseGaslessRelayer(!useGaslessRelayer)}
                   className={`${styles.togglePill} ${useGaslessRelayer ? styles.togglePillActive : ""}`}
                 >
-                  <span>⚡</span>
                   <span>Gasless Paymaster</span>
                 </div>
 
@@ -516,7 +536,6 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
                   onClick={() => setInjectNoiseDecoys(!injectNoiseDecoys)}
                   className={`${styles.togglePill} ${injectNoiseDecoys ? styles.togglePillActive : ""}`}
                 >
-                  <span>🛡️</span>
                   <span>Poisson Decoys (λ=2)</span>
                 </div>
 
@@ -524,8 +543,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
                   onClick={() => setAttachPayment(!attachPayment)}
                   className={`${styles.togglePill} ${attachPayment ? styles.togglePillActive : ""}`}
                 >
-                  <span>+</span>
-                  <span>STRK Payment Memo</span>
+                  <span>+ STRK Memo</span>
                 </div>
               </div>
             </div>
@@ -574,7 +592,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
             <div className={styles.inspectorHeader}>
               <span className={styles.inspectorTitle}>Security Inspector</span>
               <span onClick={() => setShowInspector(false)} className={styles.inspectorCloseBtn}>
-                ✕
+                Close
               </span>
             </div>
 
@@ -607,11 +625,10 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
                 <div className={styles.inspectorField}>
                   <span style={{ color: "var(--text-tertiary)" }}>Status:</span>
                   <span style={{ color: "var(--accent-primary)", fontWeight: 700 }}>
-                    {poiVerified ? "✓ Verified Clean" : "Unverified"}
+                    {poiVerified ? "Verified Clean" : "Unverified"}
                   </span>
                 </div>
                 <button onClick={handleGeneratePoi} className={styles.inspectorActionBtn}>
-                  <span>🛡️</span>
                   <span>Generate ZK-PoI Proof</span>
                 </button>
               </div>
@@ -623,21 +640,20 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
                   Export selective read-only disclosure keys for tax, legal, or compliance audits.
                 </p>
                 <button onClick={handleExportKey} className={styles.inspectorActionBtn}>
-                  <span>🔑</span>
                   <span>Export Thread Viewing Key</span>
                 </button>
               </div>
 
               {/* Card 4: Anonymity Pool Telemetry */}
               <div className={styles.inspectorCard}>
-                <span className={styles.inspectorCardTitle}>Privacy Pool Health</span>
+                <span className={styles.inspectorCardTitle}>Privacy Pool Protocol</span>
                 <div className={styles.inspectorField}>
-                  <span style={{ color: "var(--text-tertiary)" }}>Active Shielded Notes:</span>
-                  <span style={{ fontWeight: 700 }}>{anonymitySetSize}</span>
+                  <span style={{ color: "var(--text-tertiary)" }}>Network:</span>
+                  <span style={{ fontWeight: 700 }}>Starknet Sepolia</span>
                 </div>
                 <div className={styles.inspectorField}>
-                  <span style={{ color: "var(--text-tertiary)" }}>Decoy Mix Rate:</span>
-                  <span>Poisson (λ=2)</span>
+                  <span style={{ color: "var(--text-tertiary)" }}>Decoy Model:</span>
+                  <span>Poisson Process</span>
                 </div>
               </div>
             </div>
@@ -650,7 +666,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
         <div className={styles.toast} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 1000, flexDirection: "column", padding: "20px", background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", width: "320px", boxShadow: "var(--shadow-elevated)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center", marginBottom: "10px" }}>
             <span style={{ fontWeight: 700 }}>New Encrypted Lane</span>
-            <span onClick={() => setShowNewContactModal(false)} style={{ cursor: "pointer", color: "var(--text-tertiary)" }}>✕</span>
+            <span onClick={() => setShowNewContactModal(false)} style={{ cursor: "pointer", color: "var(--text-tertiary)" }}>Close</span>
           </div>
           <input
             type="text"

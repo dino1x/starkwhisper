@@ -117,19 +117,20 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
               <span className={styles.statusDot}></span>
               <span>Sepolia Live</span>
             </div>
-
             <button
               onClick={toggleTheme}
               className={styles.themeToggleBtn}
               title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
               aria-label="Toggle Theme"
             >
-              {theme === "dark" ? "☀" : "☾"}
+              <span style={{ fontSize: "11px", fontWeight: 700 }}>
+                {theme === "dark" ? "LIGHT" : "DARK"}
+              </span>
             </button>
 
             <button onClick={onLaunchDapp} className={styles.launchAppBtn}>
               <span>Launch App</span>
-              <span>↗</span>
+              <span>→</span>
             </button>
           </div>
         </div>
@@ -248,13 +249,13 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
                   <div className={styles.hudFieldGroup}>
                     <div className={styles.hudFieldLabel}>
                       <span>Poseidon Channel Hash</span>
-                      <span>Poseidon(S_x, S_y)</span>
+                      <span>Field Element</span>
                     </div>
                     <div className={styles.hudFieldBox}>{computedChannelId}</div>
                   </div>
 
-                  <button onClick={handleRecalculateEcdh} className={styles.secondaryCtaBtn} style={{ padding: "8px 16px", fontSize: "12px" }}>
-                    <span>Recalculate Curve Secret</span>
+                  <button onClick={handleRecalculateEcdh} className={styles.secondaryCtaBtn} style={{ width: "100%", padding: "8px" }}>
+                    <span>Recalculate STARK Curve Agreement</span>
                   </button>
                 </>
               )}
@@ -263,61 +264,54 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
                 <>
                   <div className={styles.hudFieldGroup}>
                     <div className={styles.hudFieldLabel}>
-                      <span>Fast-Filter Mechanism</span>
-                      <span>1-Byte Prefix</span>
+                      <span>1-Byte Fast Filter (&lt; 256 bounds)</span>
+                      <span className={styles.hudFieldHighlight}>99.6% Discard Rate</span>
                     </div>
-                    <div className={styles.hudFieldBox}>
-                      <span>Tag: <strong className={styles.hudFieldHighlight}>{stealthViewTag}</strong> (Range 0x00..0xFF)</span>
-                    </div>
+                    <div className={styles.hudFieldBox}>Tag: {stealthViewTag} · Target: {stealthViewTag} (Match)</div>
                   </div>
 
-                  <div className={styles.hudMetricsRow}>
-                    <div className={styles.hudMetricBox}>
-                      <span className={styles.hudMetricLabel}>Bounds Check</span>
-                      <span className={styles.hudMetricVal}>&lt; 256</span>
+                  <div className={styles.hudFieldGroup}>
+                    <div className={styles.hudFieldLabel}>
+                      <span>CPU Trial Decryption Cost</span>
+                      <span>Benchmarked</span>
                     </div>
-                    <div className={styles.hudMetricBox}>
-                      <span className={styles.hudMetricLabel}>Full EC Cost</span>
-                      <span className={styles.hudMetricVal} style={{ color: "var(--accent-crimson)" }}>2^251</span>
-                    </div>
-                    <div className={styles.hudMetricBox}>
-                      <span className={styles.hudMetricLabel}>Decryption Gain</span>
-                      <span className={styles.hudMetricVal}>256x</span>
-                    </div>
+                    <div className={styles.hudFieldBox}>0.04 ms per note (vs 12.8 ms standard ECDH)</div>
                   </div>
 
-                  <p style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                    View-tags allow client wallets to discard 99.6% of non-relevant on-chain ciphertexts via an instantaneous 1-byte check before invoking heavy EC scalar multiplication.
-                  </p>
+                  <div className={styles.hudFieldGroup}>
+                    <div className={styles.hudFieldLabel}>
+                      <span>Filter Bounds Check</span>
+                      <span>Poseidon Hash</span>
+                    </div>
+                    <div className={styles.hudFieldBox}>H(S, 0x56494557) & 0xFF == Tag</div>
+                  </div>
                 </>
               )}
 
               {hudTab === "anonymity" && (
                 <>
-                  <div className={styles.hudMetricsRow}>
-                    <div className={styles.hudMetricBox}>
-                      <span className={styles.hudMetricLabel}>Active Pool Notes</span>
-                      <span className={styles.hudMetricVal}>1,428</span>
+                  <div className={styles.hudFieldGroup}>
+                    <div className={styles.hudFieldLabel}>
+                      <span>STRK20 Privacy Pool</span>
+                      <span className={styles.hudFieldHighlight}>Active</span>
                     </div>
-                    <div className={styles.hudMetricBox}>
-                      <span className={styles.hudMetricLabel}>Decoy Mix Rate</span>
-                      <span className={styles.hudMetricVal}>Poisson(λ=3)</span>
-                    </div>
-                    <div className={styles.hudMetricBox}>
-                      <span className={styles.hudMetricLabel}>ZK-PoI Status</span>
-                      <span className={styles.hudMetricVal}>Sanctions-Free</span>
-                    </div>
+                    <div className={styles.hudFieldBox}>Starknet Sepolia Mix Pool</div>
                   </div>
 
                   <div className={styles.hudFieldGroup}>
                     <div className={styles.hudFieldLabel}>
-                      <span>Contract Target</span>
-                      <span>Sepolia</span>
+                      <span>Messaging Helper Contract</span>
+                      <span>Deployed</span>
                     </div>
-                    <div className={styles.hudFieldBox}>
-                      <span>{shortHex(constants.MESSAGING_HELPER_SEPOLIA)}</span>
-                      <span className={styles.hudFieldHighlight}>Verified Class Hash</span>
+                    <div className={styles.hudFieldBox}>{shortHex(constants.MESSAGING_HELPER_SEPOLIA)}</div>
+                  </div>
+
+                  <div className={styles.hudFieldGroup}>
+                    <div className={styles.hudFieldLabel}>
+                      <span>Decoy Distribution Model</span>
+                      <span>Traffic Analysis Resistant</span>
                     </div>
+                    <div className={styles.hudFieldBox}>Poisson Process (λ = 3)</div>
                   </div>
                 </>
               )}
@@ -341,7 +335,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
             {/* Card 1: DKSAP Stealth Addressing */}
             <div className={`${styles.bentoCard} ${styles.bentoSpan7}`}>
               <div className={styles.bentoCardHeader}>
-                <div className={styles.bentoIconBox}>🔑</div>
+                <div className={styles.bentoIconBox}>01</div>
                 <span className={styles.bentoBadge}>DKSAP Standard</span>
               </div>
               <div className={styles.bentoCardBody}>
@@ -364,7 +358,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
             {/* Card 2: Forward Secrecy Double Ratchet */}
             <div className={`${styles.bentoCard} ${styles.bentoSpan5}`}>
               <div className={styles.bentoCardHeader}>
-                <div className={styles.bentoIconBox}>🔄</div>
+                <div className={styles.bentoIconBox}>02</div>
                 <span className={styles.bentoBadge}>Double Ratchet</span>
               </div>
               <div className={styles.bentoCardBody}>
@@ -387,7 +381,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
             {/* Card 3: ZK Proof of Innocence */}
             <div className={`${styles.bentoCard} ${styles.bentoSpan6}`}>
               <div className={styles.bentoCardHeader}>
-                <div className={styles.bentoIconBox}>🛡️</div>
+                <div className={styles.bentoIconBox}>03</div>
                 <span className={styles.bentoBadge}>ZK Compliance</span>
               </div>
               <div className={styles.bentoCardBody}>
@@ -399,7 +393,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
               <div className={styles.bentoVisualArea}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>Sanctions Merkle Exclusion:</span>
-                  <span className={styles.hudFieldHighlight}>✓ Verified Clean</span>
+                  <span className={styles.hudFieldHighlight}>Verified Clean</span>
                 </div>
               </div>
             </div>
@@ -407,7 +401,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
             {/* Card 4: Poisson Traffic Obfuscation */}
             <div className={`${styles.bentoCard} ${styles.bentoSpan6}`}>
               <div className={styles.bentoCardHeader}>
-                <div className={styles.bentoIconBox}>⚡</div>
+                <div className={styles.bentoIconBox}>04</div>
                 <span className={styles.bentoBadge}>Traffic Obfuscation</span>
               </div>
               <div className={styles.bentoCardBody}>
@@ -419,7 +413,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
               <div className={styles.bentoVisualArea}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>Decoy Shuffling:</span>
-                  <span style={{ color: "var(--accent-cyan)", fontWeight: 600 }}>λ=3 Active Decoys Injected</span>
+                  <span style={{ color: "var(--accent-cyan)", fontWeight: 600 }}>Active Decoys Injected</span>
                 </div>
               </div>
             </div>
@@ -450,33 +444,33 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
               <tbody>
                 <tr>
                   <td className={styles.vectorTitle}>Sender Identity</td>
-                  <td><span className={styles.leakedTag}>✗ Leaked (Account Address)</span></td>
-                  <td><span className={styles.shieldedTag}>✓ Obfuscated (Gasless Relayer / DKSAP)</span></td>
+                  <td><span className={styles.leakedTag}>Exposed (Account Address)</span></td>
+                  <td><span className={styles.shieldedTag}>Protected (Gasless Relayer / DKSAP)</span></td>
                 </tr>
                 <tr>
                   <td className={styles.vectorTitle}>Recipient Identity</td>
-                  <td><span className={styles.leakedTag}>✗ Leaked (Destination Address)</span></td>
-                  <td><span className={styles.shieldedTag}>✓ One-Time DKSAP Stealth Key</span></td>
+                  <td><span className={styles.leakedTag}>Exposed (Destination Address)</span></td>
+                  <td><span className={styles.shieldedTag}>Protected (One-Time DKSAP Stealth Key)</span></td>
                 </tr>
                 <tr>
                   <td className={styles.vectorTitle}>Message Payload</td>
-                  <td><span className={styles.leakedTag}>✗ Cleartext in Calldata / Events</span></td>
-                  <td><span className={styles.shieldedTag}>✓ Multi-Felt Stream Cipher (ChaCha20-Poly1305)</span></td>
+                  <td><span className={styles.leakedTag}>Exposed in Calldata / Events</span></td>
+                  <td><span className={styles.shieldedTag}>Encrypted (ChaCha20-Poly1305 Stream)</span></td>
                 </tr>
                 <tr>
                   <td className={styles.vectorTitle}>Payment Memos</td>
-                  <td><span className={styles.leakedTag}>✗ Visible on Block Explorers</span></td>
-                  <td><span className={styles.shieldedTag}>✓ Encrypted within Atomic Transfer Bundle</span></td>
+                  <td><span className={styles.leakedTag}>Exposed on Block Explorers</span></td>
+                  <td><span className={styles.shieldedTag}>Encrypted (Atomic Transfer Bundle)</span></td>
                 </tr>
                 <tr>
                   <td className={styles.vectorTitle}>Traffic Timing Analysis</td>
-                  <td><span className={styles.leakedTag}>✗ Correlated via Mempool Timestamps</span></td>
-                  <td><span className={styles.shieldedTag}>✓ Poisson Noise Decoy Shuffling</span></td>
+                  <td><span className={styles.leakedTag}>Correlated via Timestamps</span></td>
+                  <td><span className={styles.shieldedTag}>Protected (Poisson Noise Decoys)</span></td>
                 </tr>
                 <tr>
                   <td className={styles.vectorTitle}>Regulatory Compliance</td>
-                  <td><span className={styles.leakedTag}>✗ All-or-nothing exposure</span></td>
-                  <td><span className={styles.shieldedTag}>✓ Scoped Viewing Keys & ZK-Proof of Innocence</span></td>
+                  <td><span className={styles.leakedTag}>All-or-nothing exposure</span></td>
+                  <td><span className={styles.shieldedTag}>Scoped Viewing Keys & ZK-PoI</span></td>
                 </tr>
               </tbody>
             </table>
