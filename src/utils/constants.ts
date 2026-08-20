@@ -35,6 +35,7 @@ export const Strk20EchoHelperClassHash = "0x2a4482a13cb7f70dce6f7ba99c4ee6ce4043
 // Messaging Anonymizer helper address (Mainnet / Sepolia fallback)
 export const MessagingHelperMainnet = process.env.NEXT_PUBLIC_MESSAGING_HELPER_MAINNET ?? "0x0655ec63f0bb8e2a6c00cb6cc6d80f9f0860351e8ca9e9c248b110e51e113868";
 export const MessagingHelperSepolia = process.env.NEXT_PUBLIC_MESSAGING_HELPER_SEPOLIA ?? "0x0655ec63f0bb8e2a6c00cb6cc6d80f9f0860351e8ca9e9c248b110e51e113868";
+export const MESSAGING_HELPER_SEPOLIA = MessagingHelperSepolia;
 
 export function messagingHelperForIndex(index: number): string {
     if (index === 0) return MessagingHelperMainnet;

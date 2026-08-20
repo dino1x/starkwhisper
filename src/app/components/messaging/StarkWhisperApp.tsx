@@ -80,11 +80,31 @@ const SEED_CONTACTS = [
   },
 ];
 
-export default function StarkWhisperApp() {
+interface StarkWhisperAppProps {
+  onBackToLanding?: () => void;
+}
+
+export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProps) {
   const connectedAddress = useStoreWallet((state) => state.address);
   const isConnected = useStoreWallet((state) => state.isConnected);
   const myWalletAccount = useStoreWallet((state) => state.myWalletAccount);
   const myFrontendProviderIndex = useFrontendProvider((state) => state.currentFrontendProviderIndex);
+
+  // Theme Toggle State
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const savedTheme = (localStorage.getItem("theme") as "dark" | "light") || "dark";
+    setTheme(savedTheme);
+    document.documentElement.setAttribute("data-theme", savedTheme);
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("theme", nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+  };
 
   const [activeContact, setActiveContact] = useState(SEED_CONTACTS[0]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -593,75 +613,56 @@ export default function StarkWhisperApp() {
 
       {/* Top Header */}
       <header className={styles.header}>
-        <div className={styles.headerBrand}>
-          <span className={styles.brandIcon}>STRK20</span>
-          <h1 className={styles.appTitle}>StarkWhisper</h1>
-          <span className={styles.versionBadge}>v1.0 SEPOLIA & MAINNET</span>
+        <div className={styles.headerLeft}>
+          {onBackToLanding && (
+            <button onClick={onBackToLanding} className={styles.backBtn} title="Return to Landing Page">
+              <span>← Landing</span>
+            </button>
+          )}
+
+          <div className={styles.brandBox}>
+            <div className={styles.brandIcon}>W</div>
+            <span className={styles.brandTitle}>StarkWhisper</span>
+          </div>
+
+          <div className={styles.headerTelemetry}>
+            <div
+              className={styles.telemetryPill}
+              onClick={() => setShowAuditorModal(true)}
+              title="Active STRK20 privacy pool depth. Click to open Auditor & Viewing Keys"
+            >
+              <span style={{ color: "var(--accent-primary)" }}>●</span>
+              <span>Anonymity Pool: {anonymitySetSize} Notes</span>
+            </div>
+
+            <div
+              className={styles.telemetryPill}
+              onClick={() => setShowTelemetry(!showTelemetry)}
+              title="Toggle Live Telemetry HUD"
+            >
+              <span>{showTelemetry ? "Hide HUD" : "Live HUD"}</span>
+            </div>
+          </div>
         </div>
 
         <div className={styles.headerRight}>
-          {/* Anonymity Set Badge */}
-          <div
-            title="Active STRK20 privacy mixing pool size. Your identity is mathematically hidden among N shielded notes."
-            style={{
-              background: "rgba(6, 214, 160, 0.1)",
-              border: "1px solid #06D6A0",
-              color: "#06D6A0",
-              padding: "6px 12px",
-              borderRadius: "8px",
-              fontSize: "12px",
-              fontFamily: "'JetBrains Mono', monospace",
-              fontWeight: 700,
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            <span style={{ color: "#06D6A0" }}>●</span> Anonymity Set: {anonymitySetSize} Notes
-          </div>
-
           <button
             onClick={() => setShowAuditorModal(true)}
-            style={{
-              background: "#06D6A0",
-              color: "#111827",
-              border: "none",
-              padding: "6px 14px",
-              borderRadius: "8px",
-              fontSize: "12px",
-              fontWeight: 700,
-              fontFamily: "'Space Grotesk', sans-serif",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-            }}
+            className={styles.hudActionBtn}
+            title="Export or Import Scoped Viewing Keys and ZK-PoI Proofs"
           >
-            Auditor Mode & Viewing Keys 🔑
+            <span>Auditor Mode</span>
           </button>
 
           <button
-            onClick={() => setShowTelemetry(!showTelemetry)}
-            style={{
-              background: showTelemetry ? "#E63946" : "#111827",
-              color: "#FFFFFF",
-              border: "none",
-              padding: "6px 14px",
-              borderRadius: "8px",
-              fontSize: "12px",
-              fontWeight: 700,
-              fontFamily: "'Space Grotesk', sans-serif",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-            }}
+            onClick={toggleTheme}
+            className={styles.themeToggleBtn}
+            title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
+            aria-label="Toggle Theme"
           >
-            {showTelemetry ? "Hide ZK Telemetry" : "Inspect ZK Telemetry"}
+            {theme === "dark" ? "☀" : "☾"}
           </button>
 
-          <div className={styles.balanceCard}>
-            <span className={styles.balanceLabel}>SHIELDED BALANCE</span>
-            <span className={styles.balanceValue}>
-              {isLoadingBalance ? "Loading..." : shieldedBalance}
-            </span>
-          </div>
           <SelectWallet variant="nav" />
         </div>
       </header>

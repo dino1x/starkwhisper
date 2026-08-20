@@ -53,53 +53,8 @@ export default function Page() {
   }, []);
 
   if (showDapp) {
-    return (
-      <div>
-        {/* Top Back Navigation Bar to return to Landing Page */}
-        <div
-          style={{
-            backgroundColor: "#111111",
-            color: "#ffffff",
-            padding: "10px 24px",
-            borderBottom: "1px solid #262626",
-            fontSize: "13px",
-            fontFamily: '"JetBrains Mono", monospace',
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "10px",
-          }}
-        >
-          <button
-            onClick={handleBackToLanding}
-            style={{
-              background: "#E63946",
-              color: "#ffffff",
-              border: "none",
-              padding: "6px 14px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: 700,
-              fontFamily: "inherit",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              touchAction: "manipulation",
-              fontSize: "12px",
-            }}
-          >
-            ← Back to Landing Page
-          </button>
-          <span style={{ color: "rgba(255, 255, 255, 0.6)", fontSize: "12px" }}>
-            StarkWhisper Workspace · STRK20 Privacy Pool
-          </span>
-        </div>
-        <StarkWhisperApp />
-      </div>
-    );
+    return <StarkWhisperApp onBackToLanding={handleBackToLanding} />;
   }
 
   return <LandingPage onLaunchDapp={handleLaunchDapp} />;
 }
-

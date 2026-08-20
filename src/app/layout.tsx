@@ -1,25 +1,32 @@
 import type { Metadata } from 'next'
-import { Inter, Space_Mono } from 'next/font/google'
+import { Space_Grotesk, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import '../index.css'
 
-// Clean neutral grotesque for everything (matches the Uniswap reference); a mono
-// only for hex addresses / hashes.
-const inter = Inter({
+const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
+  weight: ['600', '700'],
+  variable: '--font-display',
+  display: 'swap',
+})
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
   variable: '--font-body',
   display: 'swap',
 })
-const spaceMono = Space_Mono({
+
+const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-mono-ui',
+  weight: ['400', '500', '700'],
+  variable: '--font-mono',
   display: 'swap',
 })
 
 export const metadata: Metadata = {
-  title: 'Shielded STRK · WalletAccountV6',
-  description: 'Shield, unshield and privately move STRK on Starknet with WalletAccountV6',
+  title: 'StarkWhisper · Sovereign Private Messaging & Atomic Payments on Starknet',
+  description: 'Zero-knowledge end-to-end encrypted messaging, DKSAP stealth addresses, forward secrecy double ratchets, and private STRK payments on Starknet.',
 }
 
 export default function RootLayout({
@@ -30,10 +37,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${spaceMono.variable}`}
+      className={`${spaceGrotesk.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
+      data-theme="dark"
       suppressHydrationWarning
     >
       <body>{children}</body>
     </html>
   )
 }
+
