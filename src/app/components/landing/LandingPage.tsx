@@ -103,19 +103,19 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
             <a href="#pipeline" className={styles.navLink}>Architecture</a>
             <a href="#faq" className={styles.navLink}>FAQ</a>
             <a
-              href={`https://sepolia.voyager.online/contract/${constants.MESSAGING_HELPER_SEPOLIA}`}
+              href={`https://voyager.online/contract/${constants.Strk20EchoHelperAddress}`}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.navLink}
             >
-              Contract ↗
+              Mainnet Contract ↗
             </a>
           </div>
 
           <div className={styles.navActions}>
             <div className={styles.statusPill}>
               <span className={styles.statusDot}></span>
-              <span>Sepolia Live</span>
+              <span>Mainnet Live</span>
             </div>
             <button
               onClick={toggleTheme}
@@ -162,12 +162,12 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
               </button>
 
               <a
-                href={`https://sepolia.voyager.online/contract/${constants.MESSAGING_HELPER_SEPOLIA}`}
+                href={`https://voyager.online/contract/${constants.Strk20EchoHelperAddress}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={styles.secondaryCtaBtn}
               >
-                <span>View On-Chain Contract</span>
+                <span>View Mainnet Contract</span>
               </a>
             </div>
 
@@ -295,15 +295,15 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
                       <span>STRK20 Privacy Pool</span>
                       <span className={styles.hudFieldHighlight}>Active</span>
                     </div>
-                    <div className={styles.hudFieldBox}>Starknet Sepolia Mix Pool</div>
+                    <div className={styles.hudFieldBox}>Starknet Mainnet Mix Pool</div>
                   </div>
 
                   <div className={styles.hudFieldGroup}>
                     <div className={styles.hudFieldLabel}>
                       <span>Messaging Helper Contract</span>
-                      <span>Deployed</span>
+                      <span>Mainnet Deployed</span>
                     </div>
-                    <div className={styles.hudFieldBox}>{shortHex(constants.MESSAGING_HELPER_SEPOLIA)}</div>
+                    <div className={styles.hudFieldBox}>{shortHex(constants.Strk20EchoHelperAddress)}</div>
                   </div>
 
                   <div className={styles.hudFieldGroup}>
@@ -526,7 +526,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
               </div>
               <h3 className={styles.bentoCardTitle}>4. Atomic On-Chain Settlement</h3>
               <p className={styles.bentoCardDesc}>
-                The multicall bundle is submitted to the Sepolia MessagingAnonymizer contract directly or via the gasless paymaster relayer.
+                The multicall bundle is submitted to the Starknet Mainnet MessagingAnonymizer contract directly or via the gasless paymaster relayer.
               </p>
             </div>
           </div>
@@ -557,7 +557,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
               },
               {
                 q: "What tokens are supported for private atomic transfers?",
-                a: "StarkWhisper natively supports STRK tokens on Starknet Sepolia and Mainnet, enabling simultaneous confidential note delivery and token settlement in a single atomic transaction.",
+                a: "StarkWhisper natively supports STRK tokens on Starknet Mainnet, enabling simultaneous confidential note delivery and token settlement in a single atomic transaction.",
               },
             ].map((item, idx) => (
               <div key={idx} className={styles.faqItem}>
@@ -597,7 +597,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
           <div className={styles.footerInfo}>
             <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--text-primary)" }}>StarkWhisper Protocol</span>
             <span className={styles.footerContractHash}>
-              Sepolia Contract: {shortHex(constants.MESSAGING_HELPER_SEPOLIA)}
+              Mainnet Contract: {shortHex(constants.Strk20EchoHelperAddress)}
             </span>
           </div>
 
@@ -611,7 +611,7 @@ export default function LandingPage({ onLaunchDapp }: LandingPageProps) {
               GitHub
             </a>
             <a
-              href={`https://sepolia.voyager.online/contract/${constants.MESSAGING_HELPER_SEPOLIA}`}
+              href={`https://voyager.online/contract/${constants.Strk20EchoHelperAddress}`}
               target="_blank"
               rel="noopener noreferrer"
               className={styles.footerLink}

@@ -264,7 +264,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
         ? { type: "deposit", token: constants.addrSTRK, amount: num.toHex(amountWei) }
         : { type: "withdraw", token: constants.addrSTRK, amount: num.toHex(amountWei), recipient: connectedAddress };
 
-      await safeExecuteStrk20Transaction([action as any], myWalletAccount, constants.MessagingHelperSepolia);
+      await safeExecuteStrk20Transaction([action as any], myWalletAccount, constants.messagingHelperForIndex(myFrontendProviderIndex));
       showToast(`STRK20 ${poolTab === "shield" ? "Deposit" : "Withdrawal"} confirmed!`);
       setShowPoolModal(false);
       await fetchRealShieldedBalance();
@@ -416,7 +416,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
   // Generate ZK-Proof of Innocence
   const handleGeneratePoi = () => {
     const proof = generateZkProofOfInnocence(
-      constants.MESSAGING_HELPER_SEPOLIA,
+      constants.messagingHelperForIndex(myFrontendProviderIndex),
       connectedAddress || "0x01"
     );
     setPoiProof(proof);
@@ -804,7 +804,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
                 <span className={styles.inspectorCardTitle}>Privacy Pool Protocol</span>
                 <div className={styles.inspectorField}>
                   <span style={{ color: "var(--text-tertiary)" }}>Network:</span>
-                  <span style={{ fontWeight: 700 }}>Starknet Sepolia</span>
+                  <span style={{ fontWeight: 700 }}>{isMainnet ? "Starknet Mainnet" : "Starknet Sepolia"}</span>
                 </div>
                 <div className={styles.inspectorField}>
                   <span style={{ color: "var(--text-tertiary)" }}>Decoy Model:</span>
