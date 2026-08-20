@@ -91,6 +91,14 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
   const isConnected = useStoreWallet((state) => state.isConnected);
   const myWalletAccount = useStoreWallet((state) => state.myWalletAccount);
   const myFrontendProviderIndex = useFrontendProvider((state) => state.currentFrontendProviderIndex);
+  const setCurrentFrontendProviderIndex = useFrontendProvider((state) => state.setCurrentFrontendProviderIndex);
+  const isMainnet = myFrontendProviderIndex === 0;
+
+  const toggleNetwork = () => {
+    const nextIndex = isMainnet ? 2 : 0;
+    setCurrentFrontendProviderIndex(nextIndex);
+    showToast(`Switched network to ${nextIndex === 0 ? "Starknet Mainnet" : "Starknet Sepolia"}`);
+  };
 
   // Theme State (Dark / Light)
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -440,9 +448,14 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
             <span className={styles.brandTitle}>StarkWhisper</span>
           </div>
 
-          <div className={styles.networkPill}>
-            <span className={styles.networkDot}></span>
-            <span>Sepolia</span>
+          <div
+            onClick={toggleNetwork}
+            className={styles.networkPill}
+            style={{ cursor: "pointer" }}
+            title="Click to toggle between Starknet Mainnet and Sepolia"
+          >
+            <span className={styles.networkDot} style={{ background: isMainnet ? "#10B981" : "var(--accent-primary)" }}></span>
+            <span>{isMainnet ? "Mainnet" : "Sepolia"}</span>
           </div>
         </div>
 
