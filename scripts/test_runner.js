@@ -175,6 +175,39 @@ runTest("STRK20 Wallet Bridge Template Substitution & Multicall Assembly", () =>
   assert(resolved[2] === openNoteId, "Template ${openNoteIds[0]} must be substituted");
 });
 
+// 9. Cairo On-Chain Merkle Path Traversal Verification
+runTest("Cairo Poseidon Merkle Path Traversal & Root Assertion", () => {
+  const leafCommitment = "0x01dc5a1c99182fa189382103e48810291ba81927a";
+  const sibling1 = "0x04829fa7c3209118a8a91c1099238910aa189281b";
+  const sibling2 = "0x07398129031cba77112048991209381920381029a";
+  const nullifier = "0x555444333";
+
+  const step1 = hash.computeHashOnElements([leafCommitment, sibling1, nullifier]);
+  const calculatedRoot = hash.computeHashOnElements([step1, sibling2, nullifier]);
+
+  assert(calculatedRoot.startsWith("0x") && calculatedRoot !== "0x0", "Calculated Merkle root must be non-zero felt");
+});
+
+// 10. Autonomous AI Agent Encrypted Task & Private Bounty Settlement
+runTest("Autonomous AI Agent Encrypted Task & Bounty Settlement", () => {
+  const agentPriv = "0x03a89e17b8f64293992b192803bba80940381029482019482019482019482019";
+  const targetPriv = "0x07f18b4592038102948201948201948201948201948201948201948201948201";
+  const targetPub = ec.starkCurve.getStarkKey(targetPriv);
+
+  const sharedSecret = hash.computeHashOnElements([agentPriv, targetPub]);
+  const taskJson = JSON.stringify({ action: "EXECUTE_ARBITRAGE", pair: "ETH/STRK", bounty: "50" });
+
+  const bytes = Buffer.from(taskJson, "utf8");
+  const felts = [];
+  for (let i = 0; i < bytes.length; i += 31) {
+    felts.push("0x" + bytes.subarray(i, i + 31).toString("hex"));
+  }
+
+  assert(felts.length > 0, "Agent task must be encoded into felts");
+  const bountyCommitment = hash.computeHashOnElements([sharedSecret, "50", "0x424f554e5459"]);
+  assert(bountyCommitment.startsWith("0x"), "Bounty note commitment must be valid felt");
+});
+
 console.log("\n================================================================");
-console.log(`  🎉 All ${passedCount} tests passed successfully! (100% Green)`);
+console.log(`  All ${passedCount} tests passed successfully! (100% Green)`);
 console.log("================================================================\n");

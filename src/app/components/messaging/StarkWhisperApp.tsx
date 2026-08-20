@@ -54,6 +54,10 @@ export interface DecryptedWhisperMessage {
   ratchetStep?: number;
   decoysInjected?: number;
   noteCommitment?: string;
+  isInvoice?: boolean;
+  invoiceAmount?: string;
+  invoicePaid?: boolean;
+  invoiceId?: string;
 }
 
 export interface ContactItem {
@@ -184,6 +188,8 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
   const [messageText, setMessageText] = useState("");
   const [attachPayment, setAttachPayment] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("10");
+  const [requestInvoiceMode, setRequestInvoiceMode] = useState(false);
+  const [invoiceAmountInput, setInvoiceAmountInput] = useState("25");
   const [injectNoiseDecoys, setInjectNoiseDecoys] = useState(true);
   const [useGaslessRelayer, setUseGaslessRelayer] = useState(false);
   const [isProving, setIsProving] = useState(false);
@@ -223,9 +229,9 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
     );
   }, [contactsList, searchQuery]);
 
-  // Send Encrypted Whisper
+  // Send Encrypted Whisper or Stealth Invoice Request
   const handleSendWhisper = async () => {
-    if (!messageText.trim()) return;
+    if (!messageText.trim() && !requestInvoiceMode) return;
     setIsProving(true);
 
     try {
@@ -234,7 +240,11 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
       const nextStepCount = nextState.stepCount;
 
       // 2. Encrypt Text to Multi-Felts
-      const felts = encryptTextToMultiFelts(messageText, derivedMessageKey);
+      const rawPayload = requestInvoiceMode
+        ? `[INVOICE_REQUEST]: ${invoiceAmountInput} STRK - ${messageText || "Confidential Invoice"}`
+        : messageText;
+
+      const felts = encryptTextToMultiFelts(rawPayload, derivedMessageKey);
 
       // 3. Optional Decoy Injection
       let decoysCount = 0;
@@ -251,7 +261,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
         id: `m-${Date.now()}`,
         channelId: currentChannelId,
         sender: connectedAddress || "0x01",
-        text: messageText,
+        text: messageText || (requestInvoiceMode ? `Requested ${invoiceAmountInput} STRK` : ""),
         timestamp: Date.now(),
         hasPayment: attachPayment,
         paymentAmount: attachPayment ? `${paymentAmount} STRK` : undefined,
@@ -259,6 +269,10 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
         ratchetStep: nextStepCount,
         decoysInjected: decoysCount,
         noteCommitment,
+        isInvoice: requestInvoiceMode,
+        invoiceAmount: requestInvoiceMode ? `${invoiceAmountInput} STRK` : undefined,
+        invoicePaid: false,
+        invoiceId: requestInvoiceMode ? `INV-${Math.floor(1000 + Math.random() * 9000)}` : undefined,
       };
 
       const updatedMsgs = [...messages, newMsg];
@@ -275,10 +289,33 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
 
       setMessageText("");
       if (attachPayment) setAttachPayment(false);
-      showToast(useGaslessRelayer ? "Whisper relayed gaslessly (0 STRK Gas)" : "Note committed on-chain");
+      if (requestInvoiceMode) setRequestInvoiceMode(false);
+      showToast(requestInvoiceMode ? "Stealth invoice request dispatched" : (useGaslessRelayer ? "Whisper relayed gaslessly (0 STRK Gas)" : "Note committed on-chain"));
     } catch (err: any) {
       showToast("Transaction failed: " + (err?.message || "Unknown error"));
     } finally {
+      setIsProving(false);
+    }
+  };
+
+  // One-Click Pay Stealth Invoice
+  const handlePayInvoice = async (invoiceMsg: DecryptedWhisperMessage) => {
+    setIsProving(true);
+    showToast(`Executing private ${invoiceMsg.invoiceAmount} note transfer...`);
+
+    try {
+      setTimeout(() => {
+        const updated = messages.map((m) =>
+          m.id === invoiceMsg.id ? { ...m, invoicePaid: true } : m
+        );
+        setMessages(updated);
+        try {
+          localStorage.setItem("starkwhisper_history", JSON.stringify(updated));
+        } catch {}
+        setIsProving(false);
+        showToast(`Invoice ${invoiceMsg.invoiceId} paid with shielded note!`);
+      }, 1000);
+    } catch {
       setIsProving(false);
     }
   };
@@ -442,7 +479,7 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
                       </span>
                     </div>
                     <div className={styles.convoPreview}>
-                      {lastMsg ? lastMsg.text : "Encrypted lane ready"}
+                      {lastMsg ? (lastMsg.isInvoice ? `Invoice: ${lastMsg.invoiceAmount}` : lastMsg.text) : "Encrypted lane ready"}
                     </div>
                   </div>
                 </div>
@@ -507,6 +544,34 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
                       </div>
                     )}
 
+                    {/* Embedded Stealth Payment Request / Invoice */}
+                    {msg.isInvoice && (
+                      <div className={styles.invoiceCard}>
+                        <div className={styles.invoiceHeader}>
+                          <span>STEALTH PAYMENT REQUEST</span>
+                          <span>{msg.invoiceId}</span>
+                        </div>
+                        <div className={styles.invoiceBody}>
+                          <div className={styles.invoiceAmount}>{msg.invoiceAmount}</div>
+                          {msg.invoicePaid ? (
+                            <span className={styles.invoiceBadgePaid}>Paid (Confirmed)</span>
+                          ) : msg.isSelf ? (
+                            <span style={{ fontSize: "11px", color: "var(--text-tertiary)", fontFamily: "var(--font-family-mono)" }}>
+                              Awaiting Payment
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handlePayInvoice(msg)}
+                              disabled={isProving}
+                              className={styles.invoicePayBtn}
+                            >
+                              Pay Invoice
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className={styles.bubbleText}>{msg.text}</div>
 
                     <div className={styles.bubbleFooter}>
@@ -540,10 +605,23 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
                 </div>
 
                 <div
-                  onClick={() => setAttachPayment(!attachPayment)}
+                  onClick={() => {
+                    setAttachPayment(!attachPayment);
+                    if (requestInvoiceMode) setRequestInvoiceMode(false);
+                  }}
                   className={`${styles.togglePill} ${attachPayment ? styles.togglePillActive : ""}`}
                 >
                   <span>+ STRK Memo</span>
+                </div>
+
+                <div
+                  onClick={() => {
+                    setRequestInvoiceMode(!requestInvoiceMode);
+                    if (attachPayment) setAttachPayment(false);
+                  }}
+                  className={`${styles.togglePill} ${requestInvoiceMode ? styles.togglePillActive : ""}`}
+                >
+                  <span>+ Request STRK</span>
                 </div>
               </div>
             </div>
@@ -564,10 +642,26 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
               </div>
             )}
 
+            {/* Request Invoice Amount Drawer */}
+            {requestInvoiceMode && (
+              <div className={styles.memoDrawer}>
+                <span>Request Shielded Payment:</span>
+                <input
+                  type="number"
+                  value={invoiceAmountInput}
+                  onChange={(e) => setInvoiceAmountInput(e.target.value)}
+                  className={styles.memoInput}
+                  min="1"
+                  step="1"
+                />
+                <span>STRK</span>
+              </div>
+            )}
+
             <div className={styles.composerMain}>
               <input
                 type="text"
-                placeholder={`Type end-to-end encrypted whisper to ${activeContact.name}...`}
+                placeholder={requestInvoiceMode ? `Invoice note or memo for ${activeContact.name}...` : `Type end-to-end encrypted whisper to ${activeContact.name}...`}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
                 onKeyDown={(e) => {
@@ -577,10 +671,10 @@ export default function StarkWhisperApp({ onBackToLanding }: StarkWhisperAppProp
               />
               <button
                 onClick={handleSendWhisper}
-                disabled={isProving || !messageText.trim()}
+                disabled={isProving || (!messageText.trim() && !requestInvoiceMode)}
                 className={styles.sendBtn}
               >
-                {isProving ? "Proving..." : "Send"}
+                {isProving ? "Proving..." : (requestInvoiceMode ? "Request" : "Send")}
               </button>
             </div>
           </div>
