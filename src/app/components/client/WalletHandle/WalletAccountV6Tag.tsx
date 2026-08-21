@@ -455,7 +455,7 @@ export default function WalletAccountV6Tag() {
     >
       <div className={styles.receiptHead}>
         <span className={styles.receiptIcon}>
-          {r.status === "ok" ? "✓" : r.status === "error" ? "!" : "⋯"}
+          {r.status === "ok" ? "[OK]" : r.status === "error" ? "[FAIL]" : "[...]"}
         </span>
         <span>{r.title}</span>
       </div>
@@ -581,12 +581,12 @@ export default function WalletAccountV6Tag() {
           }`}
         >
           <div className={styles.verdictHead}>
-            <span>{verdictComplex.pending ? "⏳" : verdictComplex.ok ? "✅" : "❌"}</span>
+            <span>{verdictComplex.pending ? "[Pending]" : verdictComplex.ok ? "[Pass]" : "[Fail]"}</span>
             {verdictComplex.title}
           </div>
           {verdictComplex.rows.map((row) => (
             <div key={row.label} className={styles.verdictRow}>
-              {row.ok !== undefined && <span>{row.ok ? "✅" : "❌"}</span>}
+              {row.ok !== undefined && <span>{row.ok ? "[OK]" : "[FAIL]"}</span>}
               <b>{row.label}:</b>
               <span>{row.value}</span>
             </div>

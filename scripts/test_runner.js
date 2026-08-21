@@ -19,7 +19,7 @@ function toFieldFelt(hexStr) {
 
 function assert(condition, message) {
   if (!condition) {
-    console.error(`❌ Assertion Failed: ${message}`);
+    console.error(`[FAIL] Assertion Failed: ${message}`);
     process.exit(1);
   }
 }
@@ -33,10 +33,10 @@ let passedCount = 0;
 function runTest(name, fn) {
   try {
     fn();
-    console.log(`  ✓ ${name}`);
+    console.log(`  [PASS] ${name}`);
     passedCount++;
   } catch (err) {
-    console.error(`  ✗ ${name}`);
+    console.error(`  [FAIL] ${name}`);
     console.error(`    Error: ${err.message || err}`);
     process.exit(1);
   }

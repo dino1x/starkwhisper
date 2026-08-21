@@ -19,21 +19,21 @@ async function main() {
   const privateKey = process.env.PRIVATE_KEY;
 
   if (!accountAddress || !privateKey) {
-    console.log("⚠️ Set ACCOUNT_ADDRESS and PRIVATE_KEY in environment to run live on-chain deployment.");
-    console.log("ℹ️ Example: $env:ACCOUNT_ADDRESS='0x...'; $env:PRIVATE_KEY='0x...'; npx ts-node scripts/deploy_messaging_contract.ts");
+    console.log("[WARNING] Set ACCOUNT_ADDRESS and PRIVATE_KEY in environment to run live on-chain deployment.");
+    console.log("Example: $env:ACCOUNT_ADDRESS='0x...'; $env:PRIVATE_KEY='0x...'; npx ts-node scripts/deploy_messaging_contract.ts");
     return;
   }
 
   const provider = new RpcProvider({ nodeUrl: rpcUrl });
   const account = new Account(provider, accountAddress, privateKey, "1");
 
-  console.log(`🚀 Deploying MessagingAnonymizer on network via account ${accountAddress}...`);
+  console.log(`[DEPLOY] Deploying MessagingAnonymizer on network via account ${accountAddress}...`);
 
   const sierraPath = path.join(__dirname, "../cairo/target/dev/strk20_invoke_helper_MessagingAnonymizer.contract_class.json");
   const casmPath = path.join(__dirname, "../cairo/target/dev/strk20_invoke_helper_MessagingAnonymizer.compiled_contract_class.json");
 
   if (!fs.existsSync(sierraPath)) {
-    console.error(`❌ Sierra artifact not found at ${sierraPath}. Run 'scarb build' inside cairo directory first.`);
+    console.error(`[ERROR] Sierra artifact not found at ${sierraPath}. Run 'scarb build' inside cairo directory first.`);
     return;
   }
 
@@ -45,11 +45,11 @@ async function main() {
     casm: casmArtifact,
   });
 
-  console.log(`⌛ Transaction submitted! Tx Hash: ${deployResponse.deploy.transaction_hash}`);
-  console.log(`⌛ Contract Address: ${deployResponse.deploy.contract_address}`);
+  console.log(`[PENDING] Transaction submitted! Tx Hash: ${deployResponse.deploy.transaction_hash}`);
+  console.log(`[PENDING] Contract Address: ${deployResponse.deploy.contract_address}`);
 
   await provider.waitForTransaction(deployResponse.deploy.transaction_hash);
-  console.log(`✅ MessagingAnonymizer successfully deployed at: ${deployResponse.deploy.contract_address}`);
+  console.log(`[SUCCESS] MessagingAnonymizer successfully deployed at: ${deployResponse.deploy.contract_address}`);
 }
 
 main().catch((err) => {

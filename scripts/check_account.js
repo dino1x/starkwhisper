@@ -8,10 +8,10 @@ async function check() {
   console.log(`Checking account: ${address}`);
   try {
     const classHash = await provider.getClassHashAt(address);
-    console.log(`✅ Account is initialized on-chain with class hash: ${classHash}`);
+    console.log(`[OK] Account is initialized on-chain with class hash: ${classHash}`);
   } catch (err) {
-    console.log(`❌ Account is not yet initialized on Sepolia: ${err.message}`);
-    console.log(`👉 To initialize it: Open Argent X / Braavos on Sepolia, make sure you have test STRK, and complete the account setup transaction.`);
+    console.log(`[FAIL] Account is not yet initialized on Sepolia: ${err.message}`);
+    console.log(`Note: To initialize it: Open Argent X / Braavos on Sepolia, make sure you have test STRK, and complete the account setup transaction.`);
   }
 }
 

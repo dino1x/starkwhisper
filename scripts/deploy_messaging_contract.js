@@ -56,14 +56,14 @@ async function main() {
     await provider.waitForTransaction(deployResponse.transaction_hash);
 
     console.log("\n================================================================");
-    console.log(`🎉 SUCCESS! Deployed Contract Address:`);
+    console.log(`[SUCCESS] Deployed Contract Address:`);
     console.log(`   ${deployResponse.contract_address}`);
     console.log(`Explorer: https://sepolia.voyager.online/contract/${deployResponse.contract_address}`);
     console.log("================================================================\n");
     console.log("Next step: Set this address in your environment and constants.ts:");
     console.log(`NEXT_PUBLIC_MESSAGING_HELPER_SEPOLIA=${deployResponse.contract_address}`);
   } catch (err) {
-    console.error("\n❌ Deployment failed:", err.message || err);
+    console.error("\n[FAIL] Deployment failed:", err.message || err);
   }
 }
 
