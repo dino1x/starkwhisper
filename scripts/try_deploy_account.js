@@ -5,7 +5,7 @@ const OZ_CLASS_HASH = "0x061dac032f228ac40e00adc64724b5c704e1ff1e9f8cf69fb4d39f4
 
 async function tryDeploy() {
   const provider = new RpcProvider({ nodeUrl: "https://api.cartridge.gg/x/starknet/sepolia" });
-  const address = "0x00E45a8c0F4De0Bbd9FE24090b89C977eE27af5F59d3434D7Cf540e24790bF60";
+  const address = "0x041488ec033AFB2bB6Fc991c3B38FC30473051FF02aaD40cA517E73D76e1F133";
   const privateKey = "0x05db04fbfe5f8d754552a90e96a96b2d060a7e4f46d809c7f11f89c5c279c7e9";
   const publicKey = ec.starkCurve.getStarkKey(privateKey);
 

@@ -5,7 +5,7 @@ const ETH_TOKEN = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e0
 
 async function checkBalance() {
   const provider = new RpcProvider({ nodeUrl: "https://api.cartridge.gg/x/starknet/sepolia" });
-  const address = "0x00E45a8c0F4De0Bbd9FE24090b89C977eE27af5F59d3434D7Cf540e24790bF60";
+  const address = "0x041488ec033AFB2bB6Fc991c3B38FC30473051FF02aaD40cA517E73D76e1F133";
 
   console.log(`Checking balances for: ${address}`);
 
